@@ -54,7 +54,8 @@ class block_login extends block_base {
             $signup = $wwwroot . '/login/signup.php';
         }
         // TODO: now that we have multiauth it is hard to find out if there is a way to change password
-        $forgot = $wwwroot . '/login/forgot_password.php';
+		//miki change to blank new page when clicking on forget password goes to meydanet
+        $forgot = 'https://meydanet.shenkar.ac.il/michlol3/studentportalwap/Pt_login.aspx';
 
 
         $username = get_moodle_cookie();
@@ -99,8 +100,9 @@ class block_login extends block_base {
             if (!empty($signup)) {
                 $this->content->text .= '<div><a href="'.$signup.'">'.get_string('startsignup').'</a></div>';
             }
+			//miki change to blank new page when clicking on forget password goes to meydanet
             if (!empty($forgot)) {
-                $this->content->text .= '<div><a href="'.$forgot.'">'.get_string('forgotaccount').'</a></div>';
+                $this->content->text .= '<div><a href="'.$forgot.'" target="blank">'.get_string('forgotaccount').'</a></div>';
             }
 
             $authsequence = get_enabled_auth_plugins(true); // Get all auths, in sequence.

@@ -89,8 +89,8 @@ class login implements renderable, templatable {
 
         $this->autofocusform = !empty($CFG->loginpageautofocus);
         $this->rememberusername = isset($CFG->rememberusername) and $CFG->rememberusername == 2;
-
-        $this->forgotpasswordurl = new moodle_url($CFG->httpswwwroot . '/login/forgot_password.php');
+		//miki change to blank new page when clicking on forget password goes to meydanet
+        $this->forgotpasswordurl = new moodle_url('https://meydanet.shenkar.ac.il/michlol3/studentportalwap/Pt_login.aspx');
         $this->loginurl = new moodle_url($CFG->httpswwwroot . '/login/index.php');
         $this->signupurl = new moodle_url('/login/signup.php');
 
