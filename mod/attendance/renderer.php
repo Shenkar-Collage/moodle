@@ -308,7 +308,7 @@ class mod_attendance_renderer extends plugin_renderer_base {
             $icon = new pix_icon('key', '', 'attendance');
             $attributes = array("class" => "btn-link p-a-0", "role" => "button",
                                 "data-toggle" => "popover", "data-placement" => "left", "data-html" => "true",
-                                "tabindex" => "0", "data-trigger" => "manual");
+                                "tabindex" => "0", "data-trigger" => "manual", "title" => $sess->studentpassword);
             $attributes['data-content'] = html_writer::span($sess->studentpassword, 'student-pass');
             $actions .= html_writer::tag('a', $this->output->render($icon), $attributes);
         }
