@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+        <!-- originally version was 20110221 -->
+<XMLDB PATH="plagiarism/originality/db" VERSION="20160809" COMMENT="XMLDB file for Moodle originality"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+    <TABLES>
+        <TABLE NAME="plagiarism_originality_conf" COMMENT="originality settings for each course module" NEXT="plagiarism_originality_resp">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="cm"/>
+                <FIELD NAME="cm" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id"/>
+                <FIELD NAME="student_view_report" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="cm"/>
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id" NEXT="cm"/>
+                <KEY NAME="cm" TYPE="foreign" FIELDS="cm" REFTABLE="course_modules" REFFIELDS="id" PREVIOUS="primary"/>
+            </KEYS>
+        </TABLE>
+
+        <TABLE NAME="plagiarism_originality_resp" COMMENT="originality submission reports" PREVIOUS="plagiarism_originality_conf">
+                <FIELDS>
+                    <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="assignment"/>
+                    <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="userid" DEFAULT="0"/>
+                    <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"  PREVIOUS="assignment" NEXT="grade" DEFAULT="0"/>
+                    <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="file" DEFAULT="0"/>
+                    <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="grade"/> <!--NEXT="file_identifier"-->
+                    <!--<FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" />-->
+                </FIELDS>
+
+                <KEYS>
+                    <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+                </KEYS>
+        </TABLE>
+
+        <TABLE NAME="plagiarism_originality_req" COMMENT="originality submission requests" PREVIOUS="plagiarism_originality_resp">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="assignment"/>
+                <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="userid" DEFAULT="0"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"  PREVIOUS="assignment" NEXT="file" DEFAULT="0"/>
+                <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="userid"  /> <!--NEXT="file_identifier"-->
+                <!--<FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" />-->
+            </FIELDS>
+
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+        </TABLE>
+
+   </TABLES>
+</XMLDB>
