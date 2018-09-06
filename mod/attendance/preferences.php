@@ -61,7 +61,7 @@ $errors = array();
 if (!empty($att->pageparams->action)) {
     require_sesskey();
 }
-
+$notification = '';
 // TODO: combine this with the stuff in defaultstatus.php to avoid code duplication.
 switch ($att->pageparams->action) {
     case mod_attendance_preferences_page_params::ACTION_ADD:
@@ -83,7 +83,7 @@ switch ($att->pageparams->action) {
 
         $status = attendance_add_status($newstatus);
         if (!$status) {
-            print_error('cantaddstatus', 'attendance', $this->url_preferences());
+            $notification = $OUTPUT->notification(get_string('cantaddstatus', 'attendance'), 'error');
         }
 
         if ($pageparams->statusset > $maxstatusset) {
@@ -129,6 +129,8 @@ switch ($att->pageparams->action) {
         $description    = required_param_array('description', PARAM_TEXT);
         $grade          = required_param_array('grade', PARAM_RAW);
         $studentavailability = optional_param_array('studentavailability', null, PARAM_RAW);
+        $unmarkedstatus = optional_param('setunmarked', null, PARAM_INT);
+
         foreach ($grade as &$val) {
             $val = unformat_float($val);
         }
@@ -136,8 +138,12 @@ switch ($att->pageparams->action) {
 
         foreach ($acronym as $id => $v) {
             $status = $statuses[$id];
+            $setunmarked = false;
+            if ($unmarkedstatus == $id) {
+                $setunmarked = true;
+            }
             $errors[$id] = attendance_update_status($status, $acronym[$id], $description[$id], $grade[$id],
-                                                    null, $att->context, $att->cm, $studentavailability[$id]);
+                                                    null, $att->context, $att->cm, $studentavailability[$id], $setunmarked);
         }
         attendance_update_users_grade($att);
         break;
@@ -151,8 +157,12 @@ $setselector = new attendance_set_selector($att, $maxstatusset);
 // Output starts here.
 
 echo $output->header();
+if (!empty($notification)) {
+    echo $notification;
+}
 echo $output->heading(get_string('attendanceforthecourse', 'attendance').' :: '. format_string($course->fullname));
 echo $output->render($tabs);
+echo $OUTPUT->box(get_string('preferences_desc', 'attendance'), 'generalbox attendancedesc', 'notice');
 echo $output->render($setselector);
 echo $output->render($prefdata);
 

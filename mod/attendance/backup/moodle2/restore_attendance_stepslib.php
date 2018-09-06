@@ -49,6 +49,9 @@ class restore_attendance_activity_structure_step extends restore_activity_struct
         $paths[] = new restore_path_element('attendance_status',
                        '/activity/attendance/statuses/status');
 
+        $paths[] = new restore_path_element('attendance_warning',
+            '/activity/attendance/warnings/warning');
+
         $paths[] = new restore_path_element('attendance_session',
                        '/activity/attendance/sessions/session');
 
@@ -101,6 +104,21 @@ class restore_attendance_activity_structure_step extends restore_activity_struct
     }
 
     /**
+     * Process attendance warning restore
+     * @param object $data The data in object form
+     * @return void
+     */
+    protected function process_attendance_warning($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $data->idnumber = $this->get_new_parentid('attendance');
+
+        $DB->insert_record('attendance_warning', $data);
+    }
+
+    /**
      * Process attendance session restore
      * @param object $data The data in object form
      * @return void
@@ -108,19 +126,31 @@ class restore_attendance_activity_structure_step extends restore_activity_struct
     protected function process_attendance_session($data) {
         global $DB;
 
+        $userinfo = $this->get_setting_value('userinfo'); // Are we including userinfo?
+
         $data = (object)$data;
         $oldid = $data->id;
 
         $data->attendanceid = $this->get_new_parentid('attendance');
         $data->groupid = $this->get_mappingid('group', $data->groupid);
         $data->sessdate = $this->apply_date_offset($data->sessdate);
-        $data->lasttaken = $this->apply_date_offset($data->lasttaken);
-        $data->lasttakenby = $this->get_mappingid('user', $data->lasttakenby);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
         $data->caleventid = $this->get_mappingid('event', $data->caleventid);
 
+        if ($userinfo) {
+            $data->lasttaken = $this->apply_date_offset($data->lasttaken);
+            $data->lasttakenby = $this->get_mappingid('user', $data->lasttakenby);
+        } else {
+            $data->lasttaken = 0;
+            $data->lasttakenby = 0;
+        }
+
         $newitemid = $DB->insert_record('attendance_sessions', $data);
+        $data->id = $newitemid;
         $this->set_mapping('attendance_session', $oldid, $newitemid, true);
+
+        // Create Calendar event.
+        attendance_create_calendar_event($data);
     }
 
     /**

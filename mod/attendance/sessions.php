@@ -73,7 +73,7 @@ switch ($att->pageparams->action) {
         }
 
         if ($formdata = $mform->get_data()) {
-            $sessions = attendance_construct_sessions_data_for_add($formdata);
+            $sessions = attendance_construct_sessions_data_for_add($formdata, $att);
             $att->add_sessions($sessions);
             if (count($sessions) == 1) {
                 $message = get_string('sessiongenerated', 'attendance');
@@ -99,6 +99,9 @@ switch ($att->pageparams->action) {
         }
 
         if ($formdata = $mform->get_data()) {
+            if (empty($formdata->autoassignstatus)) {
+                $formdata->autoassignstatus = 0;
+            }
             $att->update_session_from_form_data($formdata, $sessionid);
 
             mod_attendance_notifyqueue::notify_success(get_string('sessionupdated', 'attendance'));

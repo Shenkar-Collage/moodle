@@ -1,9 +1,10 @@
 language: php
 
-sudo: false
+sudo: true
 
 addons:
   postgresql: "9.3"
+  firefox: "47.0.1"
   apt:
     packages:
       - oracle-java8-installer
@@ -21,17 +22,17 @@ php:
 
 env:
  global:
-  - MOODLE_BRANCH=master
+  - MOODLE_BRANCH=MOODLE_33_STABLE
  matrix:
   - DB=pgsql
   - DB=mysqli
 
 before_install:
   - phpenv config-rm xdebug.ini
-  - nvm install node
+  - nvm install 8.9
+  - nvm use 8.9
   - cd ../..
-  - composer selfupdate
-  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci v2.x-dev
+  - composer create-project -n --no-dev --prefer-dist moodlerooms/moodle-plugin-ci ci ^2
   - export PATH="$(cd ci/bin; pwd):$(cd ci/vendor/bin; pwd):$PATH"
 
 install:
