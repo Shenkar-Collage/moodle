@@ -62,14 +62,14 @@ if (! $mform->is_cancelled() && $fromform = $mform->get_data()) {
     if (isset( $fromform->jailservers )) {
         \mod_vpl\event\vpl_execution_localjails_updated::log( $vpl );
         $instance = $vpl->get_instance();
-        $instance->jailservers = s( $fromform->jailservers );
-        if ($DB->update_record( VPL, $instance )) {
+        $instance->jailservers = $fromform->jailservers;
+        if ( $vpl->update() ) {
             vpl_notice( get_string( 'saved', VPL ) );
         } else {
-            vpl_error( get_string( 'notsaved', VPL ) );
+            vpl_notice( get_string( 'optionsnotsaved', VPL ), 'error' );
         }
     } else {
-        vpl_error( get_string( 'notsaved', VPL ) );
+        vpl_notice( get_string( 'optionsnotsaved', VPL ), 'error' );
     }
 }
 $data = new stdClass();

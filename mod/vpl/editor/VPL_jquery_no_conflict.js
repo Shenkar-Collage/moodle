@@ -8,4 +8,8 @@
  */
 // Get correct version of jQuery for use without conflict in VPL.
 // This must be run after loading VPL jQuery.
+
+/* globals $JQVPL: true */
+/* globals jQuery */
+
 $JQVPL = jQuery.noConflict(true);

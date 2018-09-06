@@ -23,18 +23,21 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
-require_once(dirname(__FILE__).'/../../../config.php');
+defined( 'MOODLE_INTERNAL' ) || die();
+
 require_once($CFG->libdir.'/formslib.php');
 require_once($CFG->libdir.'/gradelib.php');
 require_once(dirname(__FILE__).'/../locallib.php');
 require_once(dirname(__FILE__).'/form.class.php');
+require_once(dirname(__FILE__).'/../vpl_submission_CE.class.php');
 
 class mod_vpl_grade_form extends vpl_form {
-    protected $vpl;
+    protected $submission;
     protected function get_scale_selection() {
         global $DB;
-        $vplinstance = $this->vpl->get_instance();
-        $scaleid = $this->vpl->get_grade();
+        $vpl = $this->submission->get_vpl();
+        $vplinstance = $vpl->get_instance();
+        $scaleid = $vpl->get_grade();
         $options = array ();
         $options [- 1] = get_string( 'nograde' );
         if ($scaleid > 0) {
@@ -51,42 +54,54 @@ class mod_vpl_grade_form extends vpl_form {
         }
         return $options;
     }
-    public function __construct($page, & $vpl) {
-        $this->vpl = & $vpl;
+    public function __construct($page, $submission) {
+        $this->submission = $submission;
         parent::__construct( $page );
     }
     protected function definition() {
         global $CFG, $OUTPUT;
+        $vpl = $this->submission->get_vpl();
+        $vplinstance = $vpl->get_instance();
+        $instance = $this->submission->get_instance();
         $id = required_param( 'id', PARAM_INT );
         $userid = optional_param( 'userid', null, PARAM_INT );
         $inpopup = optional_param( 'inpopup', 0, PARAM_INT );
         $this->addHidden( 'id', $id );
         $this->addHidden( 'userid', $userid );
-        $submissionid = optional_param( 'submissionid', 0, PARAM_INT );
-        if ($submissionid > 0) {
-            $this->addHidden( 'submissionid', $submissionid );
-        }
+        $this->addHidden( 'submissionid', $instance->id );
         $this->addHidden( 'inpopup', $inpopup );
-        $vplinstance = $this->vpl->get_instance();
         // TODO Improve grade form (recalculate grade).
         // Show assesment criteria.
         // Show others evaluation.
         // Type value => introduce value.
-        $grade = $this->vpl->get_grade();
+        $grade = $vpl->get_grade();
         if ($grade != 0) {
             $this->addHTML( s( get_string( 'grade' ) . ' ' ) );
             if ($grade > 0) {
                 $this->addText( 'grade', '', 6 );
+                $this->submission->grade_reduction($reduction, $percent);
+                if ($reduction > 0) {
+                    $value = $reduction;
+                    if ($percent) {
+                        $value = (100 - ( $value * 100 ) );
+                        $value = format_float($value, 2, true, true) . '%';
+                    } else {
+                        $value = format_float($value, 2, true, true);
+                    }
+                    $this->addHTML( ' -' . $value . ' ' );
+                }
             } else {
                 $this->addSelect( 'grade', $this->get_scale_selection() );
             }
             $this->addHTML( ' &nbsp;' );
         }
+        $class = " class='btn btn-secondary'";
         $this->addSubmitButton( 'save', get_string( 'grade' ) );
         if ($inpopup) {
             $this->addSubmitButton( 'savenext', get_string( 'gradeandnext', VPL ) );
         }
         $this->addSubmitButton( 'removegrade', get_string( 'removegrade', VPL ) );
+        $this->addHTML( '<br>' );
         // Tranfer files to teacher's work area.
         $url = vpl_mod_href( 'forms/edit.php', 'id', $id, 'userid', $userid, 'privatecopy', 1 );
         $options = array (
@@ -100,19 +115,20 @@ class mod_vpl_grade_form extends vpl_form {
                 'toolbar' => 0
         );
         $action = new popup_action( 'click', $url, 'privatecopy' . ($vplinstance->id), $options );
-        $this->addHTML( $OUTPUT->action_link( $url, get_string( 'copy', VPL ), $action ) );
+        $atributes = array('class' => 'btn btn-secondary');
+        $this->addHTML( ' ' . $OUTPUT->action_link( $url, get_string( 'copy', VPL ), $action,  $atributes) );
 
         if ($vplinstance->evaluate) {
             // Link to recalculate numeric grade from comments.
             $url = vpl_mod_href( 'forms/evaluation.php', 'id', $id, 'userid', $userid, 'grading', 1, 'inpopup', $inpopup );
-            $html = ' <a href="' . $url . '">' . s( get_string( 'evaluate', VPL ) ) . '</a>';
+            $html = " <a href='$url' $class>" . s( get_string( 'evaluate', VPL ) ) . '</a>';
             $this->addHTML( $html );
         }
         // Numeric grade.
         if ($grade > 0) {
             // Link to recalculate numeric grade from comments.
             $jscript = 'VPL.calculateGrade(' . $grade . ')';
-            $html = ' <a href="javascript:void(0);" onclick="' . $jscript . '">' . s( get_string( 'calculate', VPL ) ) . '</a>';
+            $html = " <a href='javascript:void(0);' onclick='$jscript' $class>" . s( get_string( 'calculate', VPL ) ) . '</a>';
             $this->addHTML( $html );
         }
 
@@ -123,7 +139,7 @@ class mod_vpl_grade_form extends vpl_form {
             $this->addHTML( '<br />' );
         }
         if (! empty( $CFG->enableoutcomes )) {
-            $gradinginfo = grade_get_grades( $this->vpl->get_course()->id, 'mod', 'vpl', $vplinstance->id, $userid );
+            $gradinginfo = grade_get_grades( $vpl->get_course()->id, 'mod', 'vpl', $vplinstance->id, $userid );
             if (! empty( $gradinginfo->outcomes )) {
                 $this->addHTML( '<table border="0">' );
                 foreach ($gradinginfo->outcomes as $oid => $outcome) {

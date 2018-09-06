@@ -29,7 +29,8 @@
  *
  */
 
-require_once(dirname(__FILE__).'/../locallib.php');
+defined('MOODLE_INTERNAL') || die();
+require_once( __DIR__ . '/../locallib.php');
 
 class vpl_jailserver_manager {
     const RECHECK = 300; // Optional setable?
@@ -94,6 +95,7 @@ class vpl_jailserver_manager {
     static private function is_checkable($server) {
         global $DB;
         $info = $DB->get_record( self::TABLE, array (
+                'serverhash' => self::get_hash($server),
                 'server' => $server
         ) );
         if ($info != null) {
@@ -117,6 +119,7 @@ class vpl_jailserver_manager {
             $strerror = '';
         }
         $info = $DB->get_record( self::TABLE, array (
+                'serverhash' => self::get_hash($server),
                 'server' => $server
         ) );
         if ($info != null) {
@@ -131,6 +134,7 @@ class vpl_jailserver_manager {
             $info->lastfail = time();
             $info->laststrerror = $strerror;
             $info->nfails = 1;
+            $info->serverhash = self::get_hash($server);
             vpl_truncate_jailservers( $info );
             $DB->insert_record( self::TABLE, $info );
         }
@@ -261,7 +265,8 @@ class vpl_jailserver_manager {
         $feedback = array ();
         foreach ($serverlist as $server) {
             $response = self::get_response( $server, $requestready, $status );
-            $info = $DB->get_record( self::TABLE, array ( 'server' => $server ) );
+            $params = array ( 'serverhash' => self::get_hash($server), 'server' => $server );
+            $info = $DB->get_record( self::TABLE, $params);
             if ($response === false) {
                 self::server_fail( $server, $status );
             } else {
@@ -273,6 +278,7 @@ class vpl_jailserver_manager {
                 $info->lastfail = null;
                 $info->laststrerror = '';
                 $info->nfails = 0;
+                $info->serverhash = self::get_hash($server);
             }
             $info->current_status = $status;
             $info->offline = $response === false;
@@ -321,5 +327,16 @@ class vpl_jailserver_manager {
             }
         }
         return $list;
+    }
+
+    /**
+     * Get server URL hash
+     *
+     * @param url $server
+     * @return int
+     */
+    static private function get_hash($server) {
+        $md = substr(md5($server), -7);
+        return hexdec( $md );
     }
 }

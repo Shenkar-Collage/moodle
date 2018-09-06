@@ -23,6 +23,8 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 class vpl_filetype {
     // TODO implement new types.
     private static $sstr = array (
@@ -32,6 +34,7 @@ class vpl_filetype {
             'js' => 'c', // JavaScript as C.
             'C' => 'cpp',
             'cpp' => 'cpp',
+            'cs' => 'cpp', // C# as C++.
             'ads' => 'ada',
             'adb' => 'ada',
             'ada' => 'ada',

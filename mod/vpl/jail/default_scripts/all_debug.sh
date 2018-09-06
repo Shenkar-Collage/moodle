@@ -5,6 +5,8 @@
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 # Author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
 
+# @vpl_script_description Run a GUI "hello world" program of all programming languages available
+
 cp common_script.sh common_script.sav
 cat common_script.sh > all_execute
 NG=0
@@ -19,32 +21,49 @@ for HELLOSCRIPT in $FILES
 do
 	typeset -u LANGUAGE=$(echo "$HELLOSCRIPT" | sed -r "s/_hello.sh$//")
 	RUNSCRIPT=$(echo "$HELLOSCRIPT" | sed -r "s/_hello.sh$/_run.sh/")
+	DEBUGSCRIPT=$(echo "$HELLOSCRIPT" | sed -r "s/_hello.sh$/_debug.sh/")
 	VPLEXE=$(echo "$HELLOSCRIPT" | sed -r "s/_hello.sh$/_execute.sh/")
+	VPLDEBEXE=$(echo "$HELLOSCRIPT" | sed -r "s/_hello.sh$/_debexecute.sh/")
 	echo -n "$LANGUAGE:"
 	rm .curerror &>/dev/null
 	. $HELLOSCRIPT gui &>.curerror
+	if [ "$VPL_SUBFILE0" == "" ] ; then
+		continue
+	fi
 	cp common_script.sav common_script.sh
 	echo "export VPL_SUBFILE0=$VPL_SUBFILE0" >> common_script.sh
 	echo "export SOURCE_FILES=$VPL_SUBFILE0" >> common_script.sh
-	eval ./$RUNSCRIPT batch 2 &>>.curerror
+	eval ./$RUNSCRIPT batch &>>.curerror
 	if [ -f vpl_wexecution ] ; then
 		let "NG=NG+1"
 		LANGGEN="$LANGGEN $LANGUAGE"
 		mv vpl_wexecution $VPLEXE
-		echo " Compiled for GUI"
+		echo -n " Compiled for run with GUI"
 		echo "echo \"Launching $LANGUAGE\"" >> all_execute
-		echo "/bin/bash ./$VPLEXE" >> all_execute
-		
+		echo "/bin/bash ./$VPLEXE" >> all_execute		
 	elif [ -f vpl_execution ] ; then
-		echo " Compiled for TUI => removed"
+		echo -n " Compiled for run with TUI => removed"
 		rm vpl_execution
 		let "NNG=NNG+1"
 		LANGNGEN="$LANGNGEN $LANGUAGE"
 	else
-		echo " Not compiled"
+		echo -n " Not compiled"
 		let "NEG=NEG+1"
 		LANGEG="$LANGEG $LANGUAGE"
 	fi
+    if [ -f ./$DEBUGSCRIPT ] ; then
+    	cp $RUNSCRIPT vpl_run.sh
+		eval ./$DEBUGSCRIPT batch &>>.curerror
+		if [ -f vpl_wexecution ] ; then
+			let "NG=NG+1"
+			LANGGEN="$LANGGEN $LANGUAGE"
+			mv vpl_wexecution $VPLDEBEXE
+			echo -n " Compiled for debug with GUI"
+			echo "echo \"Launching debuger for $LANGUAGE\"" >> all_execute
+			echo "/bin/bash ./$VPLDEBEXE" >> all_execute
+		fi
+    fi
+    echo
 	if [ -s .curerror ] ; then
 		echo "- The compilation of $LANGUAGE has generated the folloging menssages:" >> .tuierrors
 		cat .curerror >> .guierrors

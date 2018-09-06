@@ -21,8 +21,13 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
-(function() {
 
+/* globals VPL_File: true */
+/* globals VPL_Util */
+/* globals $JQVPL */
+/* globals ace */
+
+(function() {
     VPL_File = function(id, name, value, file_manager) {
         var tid = "#vpl_file" + id;
         var tabnameid = "#vpl_tab_name" + id;
@@ -205,6 +210,8 @@
                 if (!opened) {
                     return;
                 }
+                // Workaround to remove jquery-ui theme background color.
+                $JQVPL(tid).removeClass('ui-tabs-panel');
                 this.adjustSize();
                 editor.focus();
             };
@@ -247,19 +254,19 @@
                 }
                 return session.getUndoManager().hasRedo();
             };
-            this.find = function(s) {
+            this.find = function() {
                 if (!opened) {
                     return;
                 }
                 editor.execCommand('find');
             };
-            this.replace = function(s) {
+            this.replace = function() {
                 if (!opened) {
                     return;
                 }
                 editor.execCommand('replace');
             };
-            this.next = function(s) {
+            this.next = function() {
                 if (!opened) {
                     return;
                 }
@@ -289,7 +296,7 @@
                 }
                 var ext = VPL_Util.fileExtension(fileName);
                 var lang = 'text';
-                if (ext != '') {
+                if (ext !== '') {
                     lang = VPL_Util.langType(ext);
                 }
                 session.setMode("ace/mode/" + lang);
@@ -312,7 +319,8 @@
                     enableBasicAutocompletion : true,
                     enableSnippets : true,
                 });
-                editor.setTheme("ace/theme/chrome");
+                editor.setFontSize(file_manager.getFontSize());
+                editor.setTheme("ace/theme/" + file_manager.getTheme());
                 this.setFileName(fileName);
                 editor.setValue(value);
                 editor.gotoLine(0, 0);

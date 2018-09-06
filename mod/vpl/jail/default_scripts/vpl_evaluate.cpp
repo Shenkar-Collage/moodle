@@ -1,12 +1,13 @@
 /**
  * VPL builtin program for submissions evaluation
- * @Copyright (C) 2012 Juan Carlos Rodríguez-del-Pino
+ * @Copyright (C) 2018 Juan Carlos Rodríguez-del-Pino
  * @License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @Author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
 #include <cstdlib>
 #include <cstdio>
+#include <climits>
 #include <limits>
 #include <errno.h>
 #include <sys/types.h>
@@ -45,14 +46,15 @@ public:
 	static string caseFormat(string text);
 	static string toLower(const string &text);
 	static string normalizeTag(const string &text);
+	static bool parseLine(const string &text, string &name, string &data);
 	static string trimRight(const string &text);
 	static string trim(const string &text);
 	static void fdblock(int fd, bool set);
 	static bool convert2(const string& str, double &data);
 	static bool convert2(const string& str, long int &data);
+	static const char* getenv(const char* name, const char* defaultvalue);
+	static double getenv(const char* name, double defaultvalue);
 };
-
-
 
 /**
  * Class Stop Declaration
@@ -64,8 +66,6 @@ public:
 	static bool isTERMRequested();
 };
 
-
-
 /**
  * Class Timer Declaration
  */
@@ -76,8 +76,6 @@ public:
 	static int elapsedTime();
 };
 
-
-
 /**
  * Class I18n Declaration
  */
@@ -86,8 +84,6 @@ public:
 	void init();
 	const char *get_string(const char *s);
 };
-
-
 
 /**
  * Interface OutputChecker
@@ -100,13 +96,12 @@ public:
 	OutputChecker(const string &t):text(t){}
 	virtual ~OutputChecker(){};
 	virtual string type(){return "";}
+	virtual operator string (){return "";}
 	virtual string outputExpected(){return text;}
 	virtual string studentOutputExpected(){return text;}
 	virtual bool match(const string&)=0;
 	virtual OutputChecker* clone()=0;
 };
-
-
 
 /**
  * Class NumbersOutput Declaration
@@ -120,6 +115,7 @@ class NumbersOutput:public OutputChecker{
 		bool set(const string& str);
 		bool operator==(const Number &o)const;
 		bool operator!=(const Number &o)const;
+		operator string () const;
 	};
 
 	vector<Number> numbers;
@@ -138,9 +134,8 @@ public:
 	OutputChecker* clone();
 	static bool typeMatch(const string& text);
 	string type();
+	operator string () const;
 };
-
-
 
 /**
  * Class TextOutput Declaration
@@ -157,8 +152,6 @@ public:
 	static bool typeMatch(const string& text);
 	string type();
 };
-
-
 
 /**
  * Class ExactTextOutput Declaration
@@ -177,8 +170,6 @@ public:
 	static bool typeMatch(const string& text);
 	string type();
 };
-
-
 
 /**
  * Class RegularExpressionOutput Declaration
@@ -211,22 +202,57 @@ public:
 
 	string type();
 };
-
-
+/**
+ * Class Case Declaration
+ * Case represents cases
+ */
+class Case {
+	string input;
+	vector< string > output;
+	string caseDescription;
+	float gradeReduction;
+	string failMessage;
+	string programToRun;
+	string programArgs;
+	int expectedExitCode; // Default value std::numeric_limits<int>::min()
+	string variation;
+public:
+	Case();
+	void reset();
+	void addInput(string );
+	string getInput();
+	void addOutput(string );
+	const vector< string > & getOutput();
+	void setFailMessage(const string &);
+	string getFailMessage();
+	void setCaseDescription(const string &);
+	string getCaseDescription();
+	void setGradeReduction(float);
+	float getGradeReduction();
+	void setExpectedExitCode(int);
+	int getExpectedExitCode();
+	void setProgramToRun(const string &);
+	string getProgramToRun();
+	void setProgramArgs(const string &);
+	string getProgramArgs();
+	void setVariation(const string &);
+	string getVariation();
+};
 
 /**
  * Class TestCase Declaration
- * TestCase represents cases of test
+ * TestCase represents cases to tested
  */
 class TestCase {
-	static const char *command;
-	static const char **argv;
+	const char *command;
+	const char **argv;
 	static const char **envv;
 	int id;
 	bool correctOutput;
 	bool outputTooLarge;
 	bool programTimeout;
 	bool executionError;
+	bool correctExitCode;
 	char executionErrorReason[1000];
 	int sizeReaded;
 	string input;
@@ -234,31 +260,38 @@ class TestCase {
 	string caseDescription;
 	float gradeReduction;
 	float gradeReductionApplied;
+	string failMessage;
+	string programToRun;
+	string programArgs;
+	string variantion;
+	int expectedExitCode; // Default value std::numeric_limits<int>::min()
+	int exitCode; // Default value std::numeric_limits<int>::min()
 	string programOutputBefore, programOutputAfter, programInput;
 
 	void cutOutputTooLarge(string &output);
 	void readWrite(int fdread, int fdwrite);
 	void addOutput(const string &o, const string &actualCaseDescription);
-
 public:
 	static void setEnvironment(const char **environment);
+	void setDefaultCommand();
 	TestCase(const TestCase &o);
 	TestCase& operator=(const TestCase &o);
 	~TestCase();
 	TestCase(int id, const string &input, const vector<string> &output,
-			const string &caseDescription, const float gradeReduction);
+			const string &caseDescription, const float gradeReduction,
+		    string failMessage, string programToRun, string programArgs, int expectedExitCode);
 	bool isCorrectResult();
+	bool isExitCodeTested();
 	float getGradeReduction();
 	void setGradeReductionApplied(float r);
 	float getGradeReductionApplied();
 	string getCaseDescription();
 	string getCommentTitle(bool withGradeReduction/*=false*/); // Suui
 	string getComment();
+	void splitArgs(string);
 	void runTest(time_t timeout);
 	bool match(string data);
 };
-
-
 
 /**
  * Class Evaluation Declaration
@@ -266,6 +299,7 @@ public:
 class Evaluation {
 	int maxtime;
 	float grademin, grademax;
+	string variation;
 	bool noGrade;
 	float grade;
 	int nerrors, nruns;
@@ -281,8 +315,7 @@ class Evaluation {
 public:
 	static Evaluation* getSinglenton();
 	static void deleteSinglenton();
-	void addTestCase(string &input, vector<string> &output,
-			string &caseDescription, float &gradeReduction);
+	void addTestCase(Case &);
 	void removeLastNL(string &s);
 	bool cutToEndTag(string &value, const string &endTag);
 	void loadTestCases(string fname);
@@ -292,14 +325,11 @@ public:
 	void outputEvaluation();
 };
 
-
-
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////// END OF DECLARATIONS ///////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -307,16 +337,10 @@ public:
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-
 volatile bool Stop::TERMRequested = false;
 time_t Timer::startTime;
-const char *TestCase::command = NULL;
-const char **TestCase::argv = NULL;
-const char **TestCase::envv = NULL;
+const char **TestCase::envv=NULL;
 Evaluation* Evaluation::singlenton = NULL;
-
-
 
 /**
  * Class Tools Definitions
@@ -382,6 +406,18 @@ string Tools::caseFormat(string text) {
 	for (int i = 0; i < nlines; i++)
 		res += ">" + lines[i] + '\n';
 	return res;
+}
+
+bool Tools::parseLine(const string &text, string &name, string &data) {
+	size_t poseq;
+	if ((poseq = text.find('=')) != string::npos) {
+		name = normalizeTag(text.substr(0, poseq + 1));
+		data = text.substr(poseq + 1);
+		return true;
+	}
+	name = "";
+	data = text;
+	return false;
 }
 
 string Tools::toLower(const string &text) {
@@ -451,6 +487,9 @@ void Tools::fdblock(int fd, bool set) {
 }
 
 bool Tools::convert2(const string& str, double &data){
+	if ( str == "." ){
+		return false;
+	}
 	stringstream conv(str);
 	conv >> data;
 	return conv.eof();
@@ -461,7 +500,24 @@ bool Tools::convert2(const string& str, long int &data){
 	conv >> data;
 	return conv.eof();
 }
+const char* Tools::getenv(const char* name, const char* defaultvalue) {
+	const char* value = ::getenv(name);
+	if ( value == NULL ) {
+		value = defaultvalue;
+	    printf("Warning: using default value '%s' for '%s'\n", defaultvalue, name);
+	}
+}
 
+double Tools::getenv(const char* name, double defaultvalue) {
+	const char* svalue = ::getenv(name);
+	double value = defaultvalue;
+	if ( svalue != NULL ) {
+		Tools::convert2(svalue, value);
+	} else {
+		printf("Warning: using default value '%lf' for '%s'\n", defaultvalue, name);
+	}
+	return value;
+}
 
 
 /**
@@ -476,8 +532,6 @@ bool Stop::isTERMRequested() {
 	return TERMRequested;
 }
 
-
-
 /**
  * Class Timer Definitions
  */
@@ -490,8 +544,6 @@ int Timer::elapsedTime() {
 	return time(NULL) - startTime;
 }
 
-
-
 /**
  * Class Stop Definitions
  */
@@ -501,15 +553,12 @@ void I18n::init(){
 }
 
 const char *I18n::get_string(const char *s){
-
+	return s;
 }
-
-
 
 /**
  * Class NumbersOutput Definitions
  */
-
 
 // Struct Number
 bool NumbersOutput::Number::set(const string& str){
@@ -522,15 +571,25 @@ bool NumbersOutput::Number::set(const string& str){
 
 bool NumbersOutput::Number::operator==(const Number &o)const{
 	if(isInteger)
-		return o.isInteger && integer==o.integer;
+		return o.isInteger && integer == o.integer;
 	if(o.isInteger)
-		return cientific!=0?fabs((cientific-o.integer)/cientific) < 0.0001:o.integer==0;
+		return cientific != 0?fabs((cientific - o.integer) / cientific) < 0.0001 : o.integer == 0;
 	else
-		return cientific!=0?fabs((cientific-o.cientific)/cientific) < 0.0001:fabs(o.cientific)<0.0001;
+		return cientific != 0?fabs((cientific - o.cientific) / cientific) < 0.0001 : fabs(o.cientific) < 0.0001;
 }
 
 bool NumbersOutput::Number::operator!=(const Number &o)const{
 	return !((*this)==o);
+}
+
+NumbersOutput::Number::operator string() const{
+	char buf[100];
+	if(isInteger) {
+		sprintf(buf, "%ld", integer);
+	} else {
+		sprintf(buf, "%10.5lf", cientific);
+	}
+	return buf;
 }
 
 
@@ -611,10 +670,10 @@ bool NumbersOutput::typeMatch(const string& text){
 	for(int i=0; i<l; i++){
 		char c=text[i];
 		//Skip espaces/CR/LF... and *
-		if(!isspace(c) && c!='*'){
-			str+=c;
-		}else if(str.size()>0){
-			if(!isNumStart(str[0])||
+		if(!isspace(c) && c!='*') {
+			str += c;
+		}else if(str.size()>0) {
+			if (!isNumStart(str[0])||
 				!number.set(str)) return false;
 			str="";
 		}
@@ -629,15 +688,24 @@ string NumbersOutput::type(){
 	return "numbers";
 }
 
-
+NumbersOutput::operator string () const{
+	string ret="[";
+	int l=numbers.size();
+	for(int i=0; i<l; i++){
+		ret += i > 0 ? ", " : "";
+		ret += numbers[i];
+	}
+	ret += "]";
+	return ret;
+}
 
 /**
  * Class TextOutput Definitions
  */
 
 bool TextOutput::isAlpha(char c){
-	if(isalnum(c)) return true;
-	return c<0;
+	if ( isalnum(c) ) return true;
+	return c < 0;
 }
 
 TextOutput::TextOutput(const string &text):OutputChecker(text){
@@ -657,26 +725,26 @@ TextOutput::TextOutput(const string &text):OutputChecker(text){
 	}
 }
 
-bool TextOutput::operator==(const TextOutput& o){
-	int l=tokens.size();
-	if(o.tokens.size() < l) return false;
-	int offset=o.tokens.size()-l;
-	for(int i=0; i<l; i++)
-		if(tokens[i] != o.tokens[offset+i])
+bool TextOutput::operator==(const TextOutput& o) {
+	int l = tokens.size();
+	if (o.tokens.size() < l) return false;
+	int offset = o.tokens.size() - l;
+	for (int i = 0; i < l; i++)
+		if (tokens[i] != o.tokens[ offset + i ])
 			return false;
 	return true;
 }
 
-bool TextOutput::match(const string& output){
+bool TextOutput::match(const string& output) {
 	TextOutput temp(output);
-	return operator==(temp);
+	return operator== (temp);
 }
 
-OutputChecker* TextOutput::clone(){
+OutputChecker* TextOutput::clone() {
 	return new TextOutput(outputExpected());
 }
 
-bool TextOutput::typeMatch(const string& text){
+bool TextOutput::typeMatch(const string& text) {
 	return true;
 }
 
@@ -684,22 +752,20 @@ string TextOutput::type(){
 	return "text";
 }
 
-
-
 /**
  * Class ExactTextOutput Definitions
  */
 
 bool ExactTextOutput::isAlpha(char c){
 	if(isalnum(c)) return true;
-	return c<0;
+	return c < 0;
 }
 
 ExactTextOutput::ExactTextOutput(const string &text):OutputChecker(text){
-	string clean=Tools::trim(text);
-	if(clean.size()>2 && clean[0]=='*'){
-		startWithAsterix =true;
-		cleanText=clean.substr(2,clean.size()-3);
+	string clean = Tools::trim(text);
+	if(clean.size() > 2 && clean[0] == '*') {
+		startWithAsterix = true;
+		cleanText = clean.substr(2, clean.size() - 3);
 	}else{
 		startWithAsterix =false;
 		cleanText=clean.substr(1,clean.size()-2);
@@ -745,8 +811,6 @@ bool ExactTextOutput::typeMatch(const string& text){
 string ExactTextOutput::type(){
 	return "exact text";
 }
-
-
 
 /**
  * Class RegularExpressionOutput Definitions
@@ -801,7 +865,6 @@ bool RegularExpressionOutput::match (const string& output) {
 	reti=-1;
 	const char * in = cleanText.c_str();
 	// Use POSIX-C regrex.h
-
 	// Flag compilation
 	if (flagI || flagM) {
 		if (flagM && flagI) {
@@ -828,7 +891,6 @@ bool RegularExpressionOutput::match (const string& output) {
 			return false;
 
 		} else { // Memory Error
-
 			Evaluation* p_ErrorTest = Evaluation::getSinglenton();
 			string errorType = string("Out of memory error, during maching case ") + string(errorCase);
 			const char* flagError = errorType.c_str();
@@ -874,8 +936,94 @@ bool RegularExpressionOutput::typeMatch(const string& text) {
 string RegularExpressionOutput::type() {
 	return "regular expression";
 }
+/**
+ * Class Case Definitions
+ * Case represents cases
+ */
+Case::Case() {
+	reset();
+}
 
+void Case::reset() {
+	input = "";
+	output.clear();
+	caseDescription = "";
+	gradeReduction = std::numeric_limits<float>::min();
+	failMessage = "";
+	programToRun = "";
+	programArgs = "";
+	variation = "";
+	expectedExitCode = std::numeric_limits<int>::min();
+}
 
+void Case::addInput(string s) {
+	input += s;
+}
+
+string Case::getInput() {
+	return input;
+}
+
+void Case::addOutput(string o) {
+	output.push_back(o);
+}
+
+const vector< string > & Case::getOutput() {
+	return output;
+}
+
+void Case::setFailMessage(const string &s) {
+	failMessage = s;
+}
+
+string Case::getFailMessage() {
+	return failMessage;
+}
+void Case::setCaseDescription(const string &s) {
+	caseDescription = s;
+}
+
+string Case::getCaseDescription() {
+	return caseDescription;
+}
+void Case::setGradeReduction(float g) {
+	gradeReduction = g;
+}
+
+float Case::getGradeReduction() {
+	return gradeReduction;
+}
+
+void Case::setExpectedExitCode(int e) {
+	expectedExitCode = e;
+}
+
+int Case::getExpectedExitCode() {
+	return expectedExitCode;
+}
+void Case::setProgramToRun(const string &s) {
+	programToRun = s;
+}
+
+string Case::getProgramToRun() {
+	return programToRun;
+}
+
+void Case::setProgramArgs(const string &s) {
+	programArgs = s;
+}
+
+string Case::getProgramArgs() {
+	return programArgs;
+}
+
+void Case::setVariation(const string &s) {
+	variation = Tools::toLower(Tools::trim(s));
+}
+
+string Case::getVariation() {
+	return variation;
+}
 
 /**
  * Class TestCase Definitions
@@ -940,21 +1088,24 @@ void TestCase::addOutput(const string &o, const string &actualCaseDescription){
 	else if(NumbersOutput::typeMatch(o))
 		this->output.push_back(new NumbersOutput(o));
 	else
-
 		this->output.push_back(new TextOutput(o));
 }
 
 void TestCase::setEnvironment(const char **environment) {
+	envv = environment;
+}
+
+void TestCase::setDefaultCommand() {
 	command = "./vpl_test";
 	argv = new const char*[2];
 	argv[0] = command;
 	argv[1] = NULL;
-	envv = environment;
 }
 
 TestCase::TestCase(const TestCase &o) {
 	id=o.id;
 	correctOutput=o.correctOutput;
+	correctExitCode = o.correctExitCode;
 	outputTooLarge=o.outputTooLarge;
 	programTimeout=o.programTimeout;
 	executionError=o.executionError;
@@ -963,6 +1114,11 @@ TestCase::TestCase(const TestCase &o) {
 	input=o.input;
 	caseDescription=o.caseDescription;
 	gradeReduction=o.gradeReduction;
+	expectedExitCode = o.expectedExitCode;
+	exitCode = o.exitCode;
+	failMessage=o.failMessage;
+	programToRun=o.programToRun;
+	programArgs=o.programArgs;
 	gradeReductionApplied=o.gradeReductionApplied;
 	programOutputBefore=o.programOutputBefore;
 	programOutputAfter=o.programOutputAfter;
@@ -970,11 +1126,13 @@ TestCase::TestCase(const TestCase &o) {
 	for(int i=0; i<o.output.size(); i++){
 		output.push_back(o.output[i]->clone());
 	}
+	setDefaultCommand();
 }
 
 TestCase& TestCase::operator=(const TestCase &o) {
 	id=o.id;
 	correctOutput=o.correctOutput;
+	correctExitCode = o.correctExitCode;
 	outputTooLarge=o.outputTooLarge;
 	programTimeout=o.programTimeout;
 	executionError=o.executionError;
@@ -983,6 +1141,11 @@ TestCase& TestCase::operator=(const TestCase &o) {
 	input=o.input;
 	caseDescription=o.caseDescription;
 	gradeReduction=o.gradeReduction;
+	failMessage=o.failMessage;
+	programToRun=o.programToRun;
+	programArgs=o.programArgs;
+	expectedExitCode = o.expectedExitCode;
+	exitCode = o.exitCode;
 	gradeReductionApplied=o.gradeReductionApplied;
 	programOutputBefore=o.programOutputBefore;
 	programOutputAfter=o.programOutputAfter;
@@ -1002,7 +1165,8 @@ TestCase::~TestCase() {
 }
 
 TestCase::TestCase(int id, const string &input, const vector<string> &output,
-		const string &caseDescription, const float gradeReduction) {
+		const string &caseDescription, const float gradeReduction,
+		string failMessage, string programToRun, string programArgs, int expectedExitCode) {
 	this->id = id;
 	this->input = input;
 	for(int i=0;i<output.size(); i++){
@@ -1010,18 +1174,28 @@ TestCase::TestCase(int id, const string &input, const vector<string> &output,
 	}
 	this->caseDescription = caseDescription;
 	this->gradeReduction = gradeReduction;
+	this->expectedExitCode = expectedExitCode;
+	this->programToRun = programToRun;
+	this->programArgs = programArgs;
+	this->failMessage = failMessage;
+	exitCode = std::numeric_limits<int>::min();
 	outputTooLarge = false;
 	programTimeout = false;
 	executionError = false;
 	correctOutput = false;
+	correctExitCode = false;
 	sizeReaded = 0;
 	gradeReductionApplied =0;
 	strcpy(executionErrorReason, "");
+	setDefaultCommand();
 }
 
 bool TestCase::isCorrectResult() {
-	return correctOutput && !(programTimeout || outputTooLarge
-			|| executionError);
+	return correctOutput && !programTimeout && !outputTooLarge
+		  && !executionError || (isExitCodeTested() && correctExitCode);
+}
+bool TestCase::isExitCodeTested() {
+	return expectedExitCode != std::numeric_limits<int>::min();
 }
 
 float TestCase::getGradeReduction() {
@@ -1057,15 +1231,14 @@ string TestCase::getCommentTitle(bool withGradeReduction=false) {
 }
 
 string TestCase::getComment() {
-	if(output.size()==0){
-		return "Configuration error in the test case: the output is not defined";
-	}
-	if (correctOutput && !(programTimeout || outputTooLarge
-			|| executionError)) {
+	if (isCorrectResult()) {
 		return "";
 	}
 	char buf[100];
 	string ret;
+	if(output.size()==0){
+		ret += "Configuration error in the test case: the output is not defined";
+	}
 	if (programTimeout) {
 		ret += "Program timeout\n";
 	}
@@ -1076,18 +1249,63 @@ string TestCase::getComment() {
 	if (executionError) {
 		ret += executionErrorReason + string("\n");
 	}
-	if (!correctOutput) {
-		ret += "Incorrect program result\n";
-		ret += " --- Input ---\n";
-		ret += Tools::caseFormat(input);
-		ret += "\n --- Program output ---\n";
-		ret += Tools::caseFormat(programOutputBefore + programOutputAfter);
-		if(output.size()>0){
-			ret += "\n --- Expected output ("+output[0]->type()+")---\n";
-			ret += Tools::caseFormat(output[0]->studentOutputExpected());
+	if (isExitCodeTested() && ! correctExitCode) {
+		char buf[250];
+		sprintf(buf, "Incorrect exit code. Expected %d, found %d\n", expectedExitCode, exitCode);
+		ret += buf;
+	}
+	if (! correctOutput) {
+		if (failMessage.size()) {
+			ret += failMessage + "\n";
+		} else {
+			ret += "Incorrect program output\n";
+			ret += " --- Input ---\n";
+			ret += Tools::caseFormat(input);
+			ret += "\n --- Program output ---\n";
+			ret += Tools::caseFormat(programOutputBefore + programOutputAfter);
+			if(output.size()>0){
+				ret += "\n --- Expected output ("+output[0]->type()+")---\n";
+				ret += Tools::caseFormat(output[0]->studentOutputExpected());
+			}
 		}
 	}
 	return ret;
+}
+
+void TestCase::splitArgs(string programArgs) {
+	int l = programArgs.size();
+	int nargs = 1;
+	char *buf = new char[programArgs.size() + 1];
+	strcpy(buf, programArgs.c_str());
+	argv = (const char **) new char*[programArgs.size() + 1];
+	argv[0] = command;
+	bool inArg = false;
+	char separator = ' ';
+	for(int i=0; i < l; i++) { // TODO improve
+		if ( ! inArg ) {
+			if ( buf[i] == ' ' ) {
+				buf[i] = '\0';
+				continue;
+			} else if ( buf[i] == '\'' ) {
+				argv[nargs++] = buf + i + 1;
+				separator = '\'';
+			} else if ( buf[i] == '"' ) {
+				argv[nargs++] = buf + i + 1;
+				separator = '"';
+			} else if ( buf[i] != '\0') {
+				argv[nargs++] = buf + i;
+				separator = ' ';
+			}
+			inArg = true;
+		} else {
+			if ( buf[i] == separator  ) {
+				buf[i] = '\0';
+				separator = ' ';
+				inArg = false;
+			}
+		}
+	}
+	argv[nargs] = NULL;
 }
 
 void TestCase::runTest(time_t timeout) {//timeout in seconds
@@ -1100,7 +1318,18 @@ void TestCase::runTest(time_t timeout) {//timeout in seconds
 				strerror(errno));
 		return;
 	}
+	if ( programToRun > "" && programToRun.size() < 512) {
+		command = programToRun.c_str();
+	}
+	if ( ! Tools::existFile(command) ){
+		executionError = true;
+		sprintf(executionErrorReason, "Execution file not found '%s'", command);
+		return;
+	}
 	pid_t pid;
+	if ( programArgs.size() > 0) {
+		splitArgs(programArgs);
+	}
 	if ((pid = fork()) == 0) {
 		//Execute
 		close(pp1[1]);
@@ -1133,6 +1362,7 @@ void TestCase::runTest(time_t timeout) {//timeout in seconds
 	programOutputAfter = "";
 	pid_t pidr;
 	int status;
+	exitCode = std::numeric_limits<int>::min();
 	while ((pidr = waitpid(pid, &status, WNOHANG | WUNTRACED)) == 0) {
 		readWrite(fdread, fdwrite);
 		usleep(5000);
@@ -1160,8 +1390,9 @@ void TestCase::runTest(time_t timeout) {//timeout in seconds
 			sprintf(executionErrorReason,
 					"Program terminated due to \"%s\" (%d)\n", strsignal(
 							signal), signal);
-		} else if (WIFEXITED(status)) {
-			//Nothing TODO
+		}
+		if (WIFEXITED(status)) {
+			exitCode = WEXITSTATUS(status);
 		} else {
 			executionError = true;
 			strcpy(executionErrorReason,
@@ -1172,8 +1403,9 @@ void TestCase::runTest(time_t timeout) {//timeout in seconds
 		strcpy(executionErrorReason, "waitpid error");
 	}
 	readWrite(fdread, fdwrite);
-	correctOutput = match(programOutputAfter) || match(programOutputBefore
-			+ programOutputAfter);
+	correctExitCode = isExitCodeTested() && expectedExitCode == exitCode;
+	correctOutput = match(programOutputAfter)
+			     || match(programOutputBefore + programOutputAfter);
 }
 
 bool TestCase::match(string data) {
@@ -1182,8 +1414,6 @@ bool TestCase::match(string data) {
 			return true;
 	return false;
 }
-
-
 
 /**
  * Class Evaluation Definitions
@@ -1211,14 +1441,13 @@ void Evaluation::deleteSinglenton(){
 	}
 }
 
-void Evaluation::addTestCase(string &input, vector<string> &output,
-		string &caseDescription, float &gradeReduction) {
-	testCases.push_back(TestCase(testCases.size() + 1, input, output,
-			caseDescription, gradeReduction));
-	input = "";
-	output.resize(0);
-	caseDescription = "";
-	gradeReduction = std::numeric_limits<float>::min();
+void Evaluation::addTestCase(Case &caso) {
+	if ( caso.getVariation().size() && caso.getVariation() != variation ) {
+		return;
+	}
+	testCases.push_back(TestCase(testCases.size() + 1, caso.getInput(), caso.getOutput(),
+			caso.getCaseDescription(), caso.getGradeReduction(), caso.getFailMessage(),
+			caso.getProgramToRun(), caso.getProgramArgs(), caso.getExpectedExitCode() ));
 }
 
 void Evaluation::removeLastNL(string &s) {
@@ -1244,6 +1473,12 @@ void Evaluation::loadTestCases(string fname) {
 	const char *OUTPUT_TAG = "output=";
 	const char *OUTPUT_END_TAG = "outputend=";
 	const char *GRADEREDUCTION_TAG = "gradereduction=";
+	const char *FAILMESSAGE_TAG = "failmessage=";
+	const char *PROGRAMTORUN_TAG = "programtorun=";
+	const char *PROGRAMARGS_TAG = "programarguments=";
+	const char *EXPECTEDEXITCODE_TAG = "expectedexitcode=";
+	const char *VARIATION_TAG = "variation=";
+	int expectedExitCode = std::numeric_limits<int>::min();
 	enum {
 		regular, ininput, inoutput
 	} state, newstate;
@@ -1252,137 +1487,144 @@ void Evaluation::loadTestCases(string fname) {
     remove(fname.c_str());
 	string inputEnd = "";
 	string outputEnd = "";
-	string input = "";
+	Case caso;
 	string output = "";
-	string caseDescription = "";
 	string tag, value;
-	float gradeReduction = std::numeric_limits<float>::min();
-	/*must be changed from String
-	 * to pair type (regexp o no) and string*/
-	vector<string> outputs;
+	/* must be changed from String
+	 * to pair type (regexp o no) and string. */
 	state = regular;
 	int nlines = lines.size();
 	for (int i = 0; i < nlines; i++) {
 		string &line = lines[i];
-		size_t poseq;
-		if ((poseq = line.find('=')) != string::npos) {
-			tag = Tools::normalizeTag(line.substr(0, poseq + 1));
-			value = line.substr(poseq + 1);
-		} else {
-			tag.clear();
-		}
+		Tools::parseLine(line, tag, value);
 		if (state == ininput) {
-			if (inputEnd.size()) { //Check for end of input
+			if (inputEnd.size()) { // Check for end of input.
 				size_t pos = line.find(inputEnd);
 				if (pos == string::npos) {
-					input += line + "\n";
+					caso.addInput(line + "\n");
 				} else {
 					cutToEndTag(line, inputEnd);
-					input += line;
+					caso.addInput(line);
 					state = regular;
-					continue; //Next line
+					continue; // Next line.
 				}
 			} else if (tag.size() && (tag == OUTPUT_TAG || tag
-					== GRADEREDUCTION_TAG || tag == CASE_TAG)) {//New valid tag
+					== GRADEREDUCTION_TAG || tag == CASE_TAG)) {// New valid tag.
 				state = regular;
-				//Go on to process the current tag
+				// Go on to process the current tag.
 			} else {
-				input += line + "\n";
-				continue; //Next line
+				caso.addInput(line + "\n");
+				continue; // Next line.
 			}
 		} else if (state == inoutput) {
-			if (outputEnd.size()) { //Check for end of output
+			if (outputEnd.size()) { // Check for end of output.
 				size_t pos = line.find(outputEnd);
 				if (pos == string::npos) {
 					output += line + "\n";
 				} else {
 					cutToEndTag(line, outputEnd);
 					output += line;
-					outputs.push_back(output);
+					caso.addOutput(output);
 					output = "";
 					state = regular;
-					continue; //Next line
+					continue; // Next line.
 				}
 			} else if (tag.size() && (tag == INPUT_TAG || tag == OUTPUT_TAG
-					|| tag == GRADEREDUCTION_TAG || tag == CASE_TAG)) {//New valid tag
+					|| tag == GRADEREDUCTION_TAG || tag == CASE_TAG)) {// New valid tag.
 				removeLastNL(output);
-				outputs.push_back(output);
+				caso.addOutput(output);
 				output = "";
 				state = regular;
 			} else {
 				output += line + "\n";
-				continue; //Next line
+				continue; // Next line.
 			}
 		}
 		if (state == regular && tag.size()) {
 			if (tag == INPUT_TAG) {
 				inCase = true;
 				if (cutToEndTag(value, inputEnd)) {
-					input = value;
+					caso.addInput(value);
 				} else {
 					state = ininput;
-					input = value + '\n';
+					caso.addInput(value + '\n');
 				}
 			} else if (tag == OUTPUT_TAG) {
 				inCase = true;
 				if (cutToEndTag(value, outputEnd))
-					outputs.push_back(value);
+					caso.addOutput(value);
 				else {
 					state = inoutput;
 					output = value + '\n';
 				}
 			} else if (tag == GRADEREDUCTION_TAG) {
 				inCase = true;
-				value=Tools::trim(value);
-				//A percent value?
-				if(value.size()>1 && value[value.size()-1]=='%'){
+				value = Tools::trim(value);
+				// A percent value?
+				if( value.size() > 1 && value[ value.size() - 1 ] == '%' ){
 					float percent = atof(value.c_str());
-					gradeReduction = (grademax-grademin)*percent/100;
+					caso.setGradeReduction((grademax-grademin)*percent/100);
 				}else{
-					gradeReduction = atof(value.c_str());
+					caso.setGradeReduction( atof(value.c_str()) );
 				}
+			} else if (tag == EXPECTEDEXITCODE_TAG) {
+				caso.setExpectedExitCode( atoi(value.c_str()) );
+			} else if (tag == PROGRAMTORUN_TAG) {
+				caso.setProgramToRun(Tools::trim(value));
+			} else if (tag == PROGRAMARGS_TAG) {
+				caso.setProgramArgs(Tools::trim(value));
+			} else if (tag == FAILMESSAGE_TAG) {
+				caso.setFailMessage(Tools::trim(value));
+			} else if (tag == VARIATION_TAG) {
+				caso.setVariation(value);
 			} else if (tag == INPUT_END_TAG) {
 				inputEnd = Tools::trim(value);
 			} else if (tag == OUTPUT_END_TAG) {
 				outputEnd = Tools::trim(value);
 			} else if (tag == CASE_TAG) {
 				if (inCase) {
-					addTestCase(input, outputs, caseDescription,
-							gradeReduction);
+					addTestCase(caso);
+					caso.reset();
 				}
 				inCase = true;
-				caseDescription = Tools::trim(value);
+				caso.setCaseDescription( Tools::trim(value) );
+			} else {
+				if ( line.size() > 0 ) {
+					char buf[250];
+					sprintf(buf,"Syntax error: unexpected line %d", i+1);
+					addFatalError(buf);
+				}
 			}
 		}
 	}
-	//TODO review
+	// TODO review
 	if (state == inoutput) {
 		removeLastNL(output);
-		outputs.push_back(output);
+		caso.addOutput(output);
 	}
-	if (inCase) { //Last case => save current
-		addTestCase(input, outputs, caseDescription, gradeReduction);
+	if (inCase) { // Last case => save current.
+		addTestCase(caso);
 	}
 }
 
 bool Evaluation::loadParams() {
-	grademin= VPL_GRADEMIN;
-	grademax = VPL_GRADEMAX;
-	maxtime = VPL_MAXTIME;
-	noGrade = grademin>=grademax;
-	//printf("Min=%f max=%f time=%d\n",grademin,grademax,maxtime);
+	grademin= Tools::getenv("VPL_GRADEMIN", 0.0);
+	grademax = Tools::getenv("VPL_GRADEMAX", 10);
+	maxtime = (int) Tools::getenv("VPL_MAXTIME", 20);
+	variation = Tools::toLower(Tools::trim(Tools::getenv("VPL_VARIATION","")));
+	noGrade = grademin >= grademax;
 	return true;
 }
 
 void Evaluation::addFatalError(const char *m) {
-	float reduction=grademax-grademin;
-	if(ncomments>= MAXCOMMENTS)
-		ncomments = MAXCOMMENTS-1;
+	float reduction = grademax - grademin;
+	if (ncomments >= MAXCOMMENTS)
+		ncomments = MAXCOMMENTS - 1;
 
-	snprintf(titles[ncomments],MAXCOMMENTSTITLELENGTH,"%s",m);
-	snprintf(titlesGR[ncomments],MAXCOMMENTSTITLELENGTH,"%s (%.2f)",m,reduction);
-	strcpy(comments[ncomments],"");
-	ncomments++;
+	snprintf(titles[ncomments], MAXCOMMENTSTITLELENGTH, "%s", m);
+	snprintf(titlesGR[ncomments], MAXCOMMENTSTITLELENGTH, "%s (%.2f)", m, reduction);
+	strcpy(comments[ncomments], "");
+	ncomments ++;
 	grade = grademin;
 }
 
@@ -1400,7 +1642,7 @@ void Evaluation::runTests() {
 	float defaultGradeReduction = (grademax - grademin) / testCases.size();
 	int timeout = maxtime / testCases.size();
 	for (int i = 0; i < testCases.size(); i++) {
-		printf("Testing %d/%lu : %s\n",i+1,(unsigned long)testCases.size(),testCases[i].getCaseDescription().c_str());
+		printf("Testing %d/%lu : %s\n", i+1, (unsigned long)testCases.size(), testCases[i].getCaseDescription().c_str());
 		if (timeout <= 1 || Timer::elapsedTime() >= maxtime) {
 			grade = grademin;
 			addFatalError("Global timeout");
@@ -1420,8 +1662,9 @@ void Evaluation::runTests() {
 			else
 				testCases[i].setGradeReductionApplied(gr);
 			grade -= testCases[i].getGradeReductionApplied();
-			if(grade<grademin)
-				grade=grademin;
+			if (grade < grademin) {
+				grade = grademin;
+			}
 			nerrors++;
 			if(ncomments<MAXCOMMENTS){
 				strncpy(titles[ncomments], testCases[i].getCommentTitle().c_str(),
@@ -1437,7 +1680,7 @@ void Evaluation::runTests() {
 }
 
 void Evaluation::outputEvaluation() {
-	const char* stest[]={" test","tests"};
+	const char* stest[] = {" test", "tests"};
 	if (testCases.size() > 0) {
 		if (ncomments > 1) {
 			printf("\n<|--\n");
@@ -1447,7 +1690,7 @@ void Evaluation::outputEvaluation() {
 			}
 			printf("--|>\n");
 		}
-		if (ncomments > 0) {
+		if ( ncomments > 0 ) {
 			printf("\n<|--\n");
 			for (int i = 0; i < ncomments; i++) {
 				printf("-%s", titlesGR[i]);
@@ -1455,8 +1698,8 @@ void Evaluation::outputEvaluation() {
 			}
 			printf("--|>\n");
 		}
-		if (nruns > 0) {
-			int passed=nruns-nerrors;
+		int passed = nruns - nerrors;
+		if ( nruns > 0 ) {
 			printf("\n<|--\n");
 			printf("-Summary of tests\n");
 			printf(">+------------------------------+\n");
@@ -1466,7 +1709,7 @@ void Evaluation::outputEvaluation() {
 			printf(">+------------------------------+\n");
 			printf("\n--|>\n");
 		}
-		if(!noGrade){
+		if ( ! noGrade ) {
 			char buf[100];
 			sprintf(buf, "%5.2f", grade);
 			int len = strlen(buf);
@@ -1481,8 +1724,6 @@ void Evaluation::outputEvaluation() {
 	}
 	fflush(stdout);
 }
-
-
 
 void nullSignalCatcher(int n) {
 	//printf("Signal %d\n",n);

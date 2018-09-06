@@ -21,9 +21,28 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+/* globals VPL_Util: true */
+/* globals $JQVPL */
+/* globals console */
+/* globals unescape */
+/* globals escape */
+/* globals JUnzip */
+/* globals JSInflate */
+/* globals ace */
+/* globals M */
+
 (function() {
     VPL_Util = {};
     VPL_Util.doNothing = function() {
+    };
+    var debugMode = M && M.cfg && M.cfg.developerdebug;
+    VPL_Util.log = function( m, forced) {
+        if ( (debugMode || forced) && console && console.log ) {
+            console.log( m );
+        }
+        if ( (debugMode || forced) && console && console.trace ) {
+            console.trace();
+        }
     };
     // Get scrollBarWidth.
     VPL_Util.scrollBarWidth = function() {
@@ -35,9 +54,15 @@
         return width;
     };
     VPL_Util.sanitizeHTML = function(t) {
+        if ( typeof t == 'undefined' || t.replace('/^\s+|\s+$/g','') == '') {
+            return '';
+        }
         return $JQVPL('<div>' + t + '</div>').html();
     };
     VPL_Util.sanitizeText = function(s) {
+        if ( typeof s == 'undefined' || s.replace('/^\s+|\s+$/g','') == '') {
+            return '';
+        }
         return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     };
 
@@ -88,7 +113,7 @@
     (function() {
         var reg_ext = /\.([^.]*)$/;
         var reg_img = /^(gif|jpg|jpeg|png|ico)$/i;
-        var reg_bin = /^(zip|jar|pdf)$/i;
+        var reg_bin = /^(zip|jar|pdf|tar|bin|7z|arj|deb|gzip|rar|rpm|dat|db|rtf|doc|docx|odt)$/i;
         VPL_Util.fileExtension = function(fileName) {
             var res = reg_ext.exec(fileName);
             return res !== null ? res[1] : '';
@@ -151,55 +176,58 @@
     VPL_Util.readZipFile = function(data, save, progressBar,end) {
         var ab = VPL_Util.ArrayBuffer2String(data);
         var unzipper = new JUnzip(ab);
-        if (unzipper.isZipFile()) {
-            unzipper.readEntries();
-            var out = unzipper.entries.length;
-            function process(i) {
-                if (i >= out || progressBar.isClosed()) {
-                    end && end();
-                    return;
+        if ( ! unzipper.isZipFile()) {
+            return;
+        }
+        unzipper.readEntries();
+        var out = unzipper.entries.length;
+        function process(i) {
+            if (i >= out || progressBar.isClosed()) {
+                if ( end ) {
+                    end();
                 }
-                var entry = unzipper.entries[i];
-                var fileName = entry.fileName;
-                var data;
-                // Is directory entry then skip.
-                if (fileName.match(/\/$/)) {
-                    process(i + 1);
-                } else {
-                    progressBar.processFile(fileName);
-                    var uncompressed = '';
-                    if (entry.compressionMethod === 0) {
-                        // Plain file.
-                        uncompressed = entry.data;
-                    } else if (entry.compressionMethod === 8) {
-                        uncompressed = JSInflate.inflate(entry.data);
+                return;
+            }
+            var entry = unzipper.entries[i];
+            var fileName = entry.fileName;
+            var data;
+            // Is directory entry then skip.
+            if (fileName.match(/\/$/)) {
+                process(i + 1);
+            } else {
+                progressBar.processFile(fileName);
+                var uncompressed = '';
+                if (entry.compressionMethod === 0) {
+                    // Plain file.
+                    uncompressed = entry.data;
+                } else if (entry.compressionMethod === 8) {
+                    uncompressed = JSInflate.inflate(entry.data);
+                }
+                data = VPL_Util.String2ArrayBuffer(uncompressed);
+                if (VPL_Util.isBinary(fileName)) {
+                    // If binary use as arrayBuffer.
+                    if ( ! save({name:fileName, contents:btoa(uncompressed), encoding:1}) ) {
+                        i = out;
                     }
-                    data = VPL_Util.String2ArrayBuffer(uncompressed);
-                    if (VPL_Util.isBinary(fileName)) {
-                        // If binary use as arrayBuffer.
-                        if ( ! save({name:fileName, contents:btoa(uncompressed), encoding:1}) ) {
+                    process(i + 1);
+                    progressBar.endFile();
+                } else {
+                    var blob = new Blob([ data ], {
+                        type : 'text/plain'
+                    });
+                    var fr = new FileReader();
+                    fr.onload = function(e) {
+                        if ( ! save({name:fileName, contents:e.target.result, encoding:0}) ) {
                             i = out;
                         }
                         process(i + 1);
                         progressBar.endFile();
-                    } else {
-                        blob = new Blob([ data ], {
-                            type : 'text/plain'
-                        });
-                        fr = new FileReader();
-                        fr.onload = function(e) {
-                            if ( ! save({name:fileName, contents:e.target.result, encoding:0}) ) {
-                                i = out;
-                            }
-                            process(i + 1);
-                            progressBar.endFile();
-                        };
-                        fr.readAsText(blob);
-                    }
+                    };
+                    fr.readAsText(blob);
                 }
             }
-            process(0);
         }
+        process(0);
     };
 
     VPL_Util.readSelectedFiles = function(filesToRead, save, end) {
@@ -208,14 +236,14 @@
         var filePending = 0;
         if ( ! end ) {
             end = VPL_Util.doNothing;
-        }        
+        }
         pb.processFile = function(name) {
             pb.setLabel(name);
             filePending++;
         };
         pb.endFile = function() {
             filePending--;
-            if (filePending == 0) {
+            if (filePending === 0) {
                 end();
                 pb.close();
             }
@@ -235,8 +263,8 @@
                     if (ext == 'zip') {
                         try {
                             VPL_Util.readZipFile(e.target.result, save, pb, function(){readSecuencial(sec + 1);});
-                        } catch (e) {
-                            VPL_Util.showErrorMessage(e+ " : "+f.name);
+                        } catch (ex) {
+                            VPL_Util.showErrorMessage(ex + " : " + f.name);
                         }
                     } else {
                         var data = VPL_Util.dataFromURLData(e.target.result);
@@ -290,7 +318,7 @@
             }
             var days = parseInt(timeLeft / day);
             timeLeft -= days * day;
-            if (days != 0) {
+            if (days !== 0) {
                 res += days + 'T';
             }
             var hours = parseInt(timeLeft / hour);
@@ -300,7 +328,7 @@
             var seconds = parseInt(timeLeft);
             res += ('00' + hours).substr(-2) + ':';
             res += ('00' + minutes).substr(-2);
-            if (days == 0) {
+            if (days === 0) {
                 res += ':' + ('00' + seconds).substr(-2);
             }
             return res;
@@ -308,66 +336,61 @@
     })();
     (function() {
         var maplang = {
-            'ada' : 'ada',
-            'ads' : 'ada',
-            'adb' : 'ada',
+            'abap' : 'abap',
+            'abc' : 'abc',
+            'ada' : 'ada', 'ads' : 'ada', 'adb' : 'ada',
+            'as' : 'actionscript','as3' : 'actionscript',
             'asm' : 'assembly_x86',
-            'bash' : 'bash',
-            'c' : 'c_cpp',
-            'C' : 'c_cpp',
+            'bash' : 'sh',
+            'bat' : 'batchfile',
+            'c' : 'c_cpp', 'C' : 'c_cpp', 'cc' : 'c_cpp', 'cpp' : 'c_cpp', 'hxx' : 'c_cpp', 'h' : 'c_cpp',
             'cases' : 'cases',
-            'cbl' : 'cobol',
-            'cob' : 'cobol',
+            'cbl' : 'cobol', 'cob' : 'cobol',
             'coffee' : 'coffee',
-            'cc' : 'c_cpp',
-            'cpp' : 'c_cpp',
-            'hxx' : 'c_cpp',
-            'h' : 'c_cpp',
             'clj' : 'clojure',
             'cs' : 'csharp',
             'css' : 'css',
             'd' : 'd',
             'dart' : 'dart',
-            'erl' : 'erlang',
-            'hrl' : 'erlang',
-            /*
-             * 'f' : 'fortran', // Not available in ace editor 'f77' :
-             * 'fortran',
-             */
+            'e' : 'eiffel',
+            'erl' : 'erlang', 'hrl' : 'erlang',
+            'f' : 'fortran', 'f77' : 'fortran',
             'go' : 'go',
             'groovy' : 'groovy',
             'hs' : 'haskell',
-            'htm' : 'html',
-            'html' : 'html',
+            'htm' : 'html', 'html' : 'html',
             'hx' : 'haxe',
             'java' : 'java',
             'js' : 'javascript',
             'json' : 'json',
             'jsp' : 'jsp',
-            'scm' : 'scheme',
-            's' : 'scheme',
+            'jsx' : 'jsx',
+            'kt' : 'kotlin', 'kts' : 'kotlin',
             'm' : 'matlab',
-            'lisp' : 'lisp',
-            'lsp' : 'lisp',
+            'md' : 'markdown',
+            'less' : 'less',
+            'lisp' : 'lisp', 'lsp' : 'lisp',
             'lua' : 'lua',
-            'pas' : 'pascal',
-            'p' : 'pascal',
-            'perl' : 'perl',
-            'prl' : 'perl',
+            'pas' : 'pascal', 'p' : 'pascal',
+            'perl' : 'perl', 'prl' : 'perl',
             'php' : 'php',
-            'pro' : 'prolog',
-            'pl' : 'prolog',
+            'pro' : 'prolog', 'pl' : 'prolog',
             'py' : 'python',
             'r' : 'r',
-            'rb' : 'ruby',
-            'ruby' : 'ruby',
+            'rb' : 'ruby', 'ruby' : 'ruby',
+            'sass' : 'sass',
             'scala' : 'scala',
+            'scm' : 'scheme', 's' : 'scheme',
+            'scss' : 'scss',
             'sh' : 'sh',
+            'swift' : 'swift',
             'sql' : 'sql',
+            'svg' : 'svg',
+            'tex' : 'tex',
             'tcl' : 'tcl',
+            'twig' : 'twig',
             'v' : 'verilog',
-            'vhd' : 'vhdl',
-            'vhdl' : 'vhdl',
+            'vhd' : 'vhdl', 'vhdl' : 'vhdl',
             'xml' : 'xml',
             'yaml' : 'yaml'
         };
@@ -388,7 +411,9 @@
         };
         VPL_Util.set_str = function(newi18n) {
             for (var key in newi18n) {
-                i18n[key] = newi18n[key];
+                if ( newi18n.hasOwnProperty(key) ) {
+                    i18n[key] = newi18n[key];
+                }
             }
             VPL_Util.dialogbase_options = {
                 autoOpen : false,
@@ -403,7 +428,7 @@
     })();
     (function() {
         var delayedActions = {};
-        var reg = /function ([^\(]*)/;
+        var reg = /function ([^\(]+)/;
         function functionName(func) {
             var fs = func.toString();
             var res = reg.exec(fs);
@@ -420,7 +445,7 @@
             delayedActions[fn] = setTimeout(function() {
                 func(arg1, arg2);
                 delayedActions[fn] = false;
-            }, 100);
+            }, 50);
         };
         VPL_Util.longDelay = function(func, arg1, arg2) {
             var fn = functionName(func);
@@ -430,7 +455,7 @@
             delayedActions[fn] = setTimeout(function() {
                 func(arg1, arg2);
                 delayedActions[fn] = false;
-            }, 1000);
+            }, 200);
         };
     })();
     VPL_Util.iconModified = function() {
@@ -463,6 +488,7 @@
             'new' : 'file',
             'rename' : 'pencil',
             'delete' : 'trash',
+            'multidelete' : 'trash|list',
             'close' : 'remove',
             'comments' : 'commenting',
             'import' : 'upload',
@@ -479,7 +505,7 @@
             'fullscreen' : 'expand',
             'regularscreen' : 'compress',
             'save' : 'save',
-            'sort' : 'sort-amount-asc',
+            'sort' : 'list-ol',
             'run' : 'rocket',
             'debug' : 'bug',
             'evaluate' : 'check-square-o',
@@ -495,9 +521,13 @@
             'timeleft' : 'clock-o',
             'copy' : 'copy',
             'paste' : 'paste',
+            'more' : 'plus-square',
+            'less' : 'minus-square',
             'resize' : 'arrows-alt',
             'graphic' : 'picture-o',
-            'send' : 'send'
+            'send' : 'send',
+            'user' : 'user',
+            'fontsize' : 'text-height'
         };
         VPL_Util.gen_icon = function(icon, size) {
             if (!menu_icons[icon]) {
@@ -509,13 +539,17 @@
             } else {
                 classes += size;
             }
-            classes += ' fa-' + menu_icons[icon];
-            return ret = "<i class='" + classes + "'></i>";
+            var icons = menu_icons[icon].split('|');
+            var ret = '';
+            for(var i = 0; i < icons.length; i++) {
+                ret += "<i class='" + classes + ' fa-' + icons[i] + "'></i>";
+            }
+            return ret;
         };
     })();
     // UI operations.
     VPL_Util.setTitleBar = function(dialog, type, icon, buttons, handler) {
-        title = $JQVPL(dialog).parent().find("span.ui-dialog-title");
+        var title = $JQVPL(dialog).parent().find("span.ui-dialog-title");
         function genButton(e) {
             var html = "<a id='vpl_" + type + "_" + e + "' href='#' title='" + VPL_Util.str(e) + "'>";
             html += VPL_Util.gen_icon(e, 'fw') + "</a>";
@@ -525,15 +559,15 @@
         html += " <span class='" + type + "-title-buttons'></span>";
         html += "<span class='" + type + "-title-text'></span>";
         title.html(html);
-        titleButtons = title.find("span." + type + "-title-buttons");
-        titleText = title.find("span." + type + "-title-text");
+        var titleButtons = title.find("span." + type + "-title-buttons");
+        var titleText = title.find("span." + type + "-title-text");
         html = "";
         for (var i = 0; i < buttons.length; i++) {
             html += genButton(buttons[i]);
         }
         titleButtons.html(html);
-        for (var i = 0; i < handler.length; i++) {
-            title.find('#vpl_' + type + '_' + buttons[i]).button().click(handler[i]);
+        for (var ih = 0; ih < handler.length; ih++) {
+            title.find('#vpl_' + type + '_' + buttons[ih]).button().click(handler[ih]);
         }
         titleButtons.on('focus','*', function(){$JQVPL(this).blur();});
         return titleText;
@@ -556,11 +590,9 @@
             height : 20,
             modal : true,
             dialogClass : 'vpl_ide vpl_ide_dialog',
-            close : function() {
+            close : function( event ) {
                 if (dialog) {
-                    $JQVPL(dialog).remove();
-                    dialog = false;
-                    if (onUserClose) {
+                    if (onUserClose && event.originalEvent ) {
                         onUserClose();
                     }
                     onUserClose = false;
@@ -576,13 +608,14 @@
             }
         };
         this.close = function() {
-            onUserClose = false;
-            if (dialog) {
-                dialog.dialog('close');
+            if(dialog) {
+                dialog.dialog('destroy');
+                $JQVPL(dialog).remove();
+                dialog = false;
             }
         };
         this.isClosed = function() {
-            return dialog == false;
+            return dialog === false;
         };
         var titleTag = dialog.siblings().find('.ui-dialog-title');
         titleTag.html(VPL_Util.gen_icon(title) + ' ' + titleTag.html());
@@ -590,7 +623,8 @@
         dialog.dialog('open');
         dialog.dialog('option', 'height', 'auto');
     };
-    VPL_Util.showMessage = function(message, options) {
+    VPL_Util.showMessage = function(message, initialoptions) {
+        var options = $JQVPL.extend({}, initialoptions);
         var message_dialog = $JQVPL('<div class="vpl_ide_dialog"></div>');
         if (!options) {
             options = {};
@@ -653,36 +687,49 @@
         return VPL_Util.showMessage(message, currentOptions);
     };
 
-    VPL_Util.requestAction = function(action, title, data, URL, ok, error) {
+    VPL_Util.requestAction = function(action, title, data, URL) {
+        var deferred = $JQVPL.Deferred();
         var request = null;
-        if (title == '') {
+        var xhr = false;
+        if (title === '') {
             title = 'connecting';
         }
-        var pb = new VPL_Util.progressBar(action, title, function() {
+        var apb = new VPL_Util.progressBar(action, title, function() {
             if (request.readyState != 4) {
-                request.abort();
+                if ( xhr && xhr.abort ) {
+                    xhr.abort();
+                }
             }
         });
         request = $JQVPL.ajax({
+            beforeSend: function (jqXHR) {
+                xhr = jqXHR;
+                return true;
+            },
             async : true,
             type : "POST",
             url : URL + action,
             'data' : JSON.stringify(data),
             contentType : "application/json; charset=utf-8",
             dataType : "json"
+        }).always(function() {
+            apb.close();
         }).done(function(response) {
-            pb.close();
             if (!response.success) {
-                error(response.error);
+                deferred.reject(response.error);
             } else {
-                ok(response.response);
+                deferred.resolve(response.response);
             }
         }).fail(function(jqXHR, textStatus, errorThrown) {
-            pb.close();
-            if (errorThrown != 'abort') {
-                error(VPL_Util.str('connection_fail') + ': ' + textStatus);
+            var message = VPL_Util.str('connection_fail') + ': ' + textStatus;
+            if ( debugMode ) {
+                message += '<br>' + errorThrown.message;
+                message += '<br>' + jqXHR.responseText.substr(0,80);
             }
+            VPL_Util.log(message);
+            deferred.reject(message);
         });
+        return deferred;
     };
     VPL_Util.supportWebSocket = function() {
         if ("WebSocket" in window) {
@@ -712,21 +759,26 @@
             if (!win) {
                 return true;
             }
-        } catch (e) {
+        } catch (ex) {
+            VPL_Util.log( ex );
             return true;
         }
         e.preventDefault();
         $JQVPL(this).parent().hide();
         return false;
     };
+
     VPL_Util.acceptCertificates = function(servers, getLastAction) {
         if (servers.length > 0) {
             // Generate links dialog.
             var html = VPL_Util.str('acceptcertificatesnote');
             html += '<ol>';
             for (var i in servers) {
-                var n = Number(i) + 1;
-                html += '<li><a href="' + servers[i] + '" target="_blank">Server ' + n + '</a><br /></ul>';
+                if ( servers.hasOwnProperty(i) ) {
+                    var n = 1 + i;
+                    html += '<li><a href="' + servers[i] + '" target="_blank">Server ';
+                    html += n + '</a><br /></ul>';
+                }
             }
             html += '</ol>';
             var m = VPL_Util.showMessage(html, {
@@ -741,6 +793,7 @@
             });
             $JQVPL(m).find('a').on('click keypress', VPL_Util.clickServer);
         } else {
+            VPL_Util.log('servers.length == 0');
             VPL_Util.showErrorMessage(VPL_Util.str('connection_fail'));
         }
     };
@@ -749,13 +802,13 @@
         VPL_Util.setProtocol(coninfo);
         var ws = null;
         var pb = null;
-        function showErrorMessage(message) {
-            VPL_Util.showErrorMessage(message, {
-                next : externalActions.next
-            });
-        }
+        var deferred = $JQVPL.Deferred();
+        var defail = function( m ) {
+            deferred.reject( m );
+        };
+        var delegated = false;
         var messageActions = {
-            'message' : function(content) {
+            'message' :function(content) {
                 var parsed = /^([^:]*):?(.*)/i.exec(content);
                 var state = parsed[1];
                 var detail = parsed[2];
@@ -772,29 +825,32 @@
                     pb.setLabel(text);
                 }
             },
-            'compilation' : function(content) {
+            'compilation' :function(content) {
                 if (externalActions.setResult) {
                     externalActions.setResult({
-                        'grade' : '',
-                        'compilation' : content,
-                        'evaluation' : '',
-                        'execution' : '',
+                        'compilation' :content,
                     }, false);
                 }
             },
-            'retrieve' : function() {
+            'retrieve' :function() {
                 pb.close();
-                VPL_Util.requestAction('retrieve', '', '', externalActions.ajaxurl, function(response) {
-                    if (externalActions.setResult) {
-                        externalActions.setResult(response, true);
+                delegated = true;
+                VPL_Util.requestAction('retrieve', '', '', externalActions.ajaxurl)
+                .done(
+                    function(response) {
+                        deferred.resolve();
+                        if (externalActions.setResult) {
+                            externalActions.setResult(response, true);
+                        }
                     }
-                }, showErrorMessage);
+                ).fail(defail);
             },
-            'run' : function(content) {
+            'run' :function(content) {
                 pb.close();
                 externalActions.run(content, coninfo, ws);
             },
-            'close' : function() {
+            'close' :function() {
+                VPL_Util.log('ws close message from jail');
                 ws.close();
                 if (externalActions.close) {
                     externalActions.close();
@@ -805,36 +861,49 @@
             if (VPL_Util.supportWebSocket()) {
                 ws = new WebSocket(coninfo.monitorURL);
             } else {
-                showErrorMessage(VPL_Util.str('browserupdate'));
-                return;
+                VPL_Util.log('ws not available');
+                deferred.reject(VPL_Util.str('browserupdate'));
+                return deferred;
             }
         } catch (e) {
-            showErrorMessage(e.message);
-            return;
+            VPL_Util.log('ws new say ' + e);
+            deferred.reject(e.message);
+            return deferred;
         }
         pb = new VPL_Util.progressBar(title, 'connecting', function() {
+            deferred.reject('Stopped by user');
             ws.close();
         });
         ws.notOpen = true;
-        ws.onopen = function(event) {
+        ws.onopen = function() {
             ws.notOpen = false;
             pb.setLabel(VPL_Util.str('connected'));
         };
         ws.onerror = function(event) {
+            VPL_Util.log('ws error ' + event);
             pb.close();
             if (coninfo.secure && ws.notOpen) {
-                VPL_Util.requestAction('getjails', 'retrieve', {}, externalActions.ajaxurl, function(response) {
-                    VPL_Util.acceptCertificates(response.servers, externalActions.getLastAction);
-                }, showErrorMessage);
+                VPL_Util.requestAction('getjails', 'retrieve', {}, externalActions.ajaxurl)
+                .done(function(response) {
+                    VPL_Util.acceptCertificates(response.servers, function(){
+                        return externalActions.getLastAction();
+                    });
+                })
+                .fail(defail);
             } else {
-                showErrorMessage(VPL_Util.str('connection_fail'));
+                deferred.reject(VPL_Util.str('connection_fail'));
             }
         };
-        ws.onclose = function(event) {
+        ws.onclose = function() {
             if (externalActions.getConsole) {
                 externalActions.getConsole().disconnect();
             }
-            pb.close();
+            if ( !ws.notOpen ) {
+                pb.close();
+                if ( ! delegated && deferred.state() != 'rejected' ) {
+                    deferred.resolve();
+                }
+            }
         };
 
         ws.onmessage = function(event) {
@@ -849,6 +918,288 @@
                 pb.setLabel(VPL_Util.str('error') + ': ' + event.data);
             }
         };
+        return deferred;
+    };
+    VPL_Util.processResult = function(text, filenames, sh, noFormat, folding) {
+        if ( typeof text == 'undefined' || text.replace('/^\s+|\s+$/gm','') == '' ) {
+            return '';
+        }
+        function escReg(t) {
+            return t.replace(/[-[\]{}()*+?.,\\^$|#\s]/, "\\$&");
+        }
+        var regtitgra = /\([-]?[\d]+[\.]?[\d]*\)\s*$/;
+        var regtit = /^-.*/;
+        var regcas = /^\s*\>/;
+        var regWarning = new RegExp('warning|' + escReg(VPL_Util.str('warning')), 'i');
+        var state = '';
+        var html = '';
+        var comment = '';
+        var case_ = '';
+        var lines = text.split(/\r\n|\n|\r/);
+        var regFiles = [];
+        var lastAnotation = false;
+        var lastAnotationFile = false;
+        var afterTitle = false;
+        function getHref( i ) {
+            if ( typeof sh[i].getTagId === 'undefined' ) {
+                return 'href="#" ';
+            } else {
+                return 'href="#' + sh[i].getTagId() + '" ';
+            }
+        }
+        for (var i = 0; i < filenames.length; i++) {
+            var regf = escReg(filenames[i]);
+            var reg = "(^|.* |.*/)" + regf + "[:\(](\\d+)([:\,]?(\\d+)?\\)?)";
+            regFiles[i] = new RegExp(reg, '');
+        }
+        function genFileLinks(line, rawline) {
+            var used = false;
+            for (var i = 0; i < regFiles.length; i++) {
+                var reg = regFiles[i];
+                var match;
+                while ((match = reg.exec(line)) !== null) {
+                    var anot = sh[i].getAnnotations();
+                    // Annotation format {row:,column:,raw:,type:error,warning,info;text} .
+                    lastAnotationFile = i;
+                    used = true;
+                    var type = line.search(regWarning) == -1 ? 'error' : 'warning';
+                    lastAnotation = {
+                        row : (match[2] - 1),
+                        column : match[3],
+                        type : type,
+                        text : rawline,
+                    };
+                    anot.push(lastAnotation);
+                    var fileName = filenames[i];
+                    var href = getHref( i );
+                    var lt = VPL_Util.sanitizeText( fileName );
+                    var data = 'data-file="' + fileName + '" data-line="' + match[2] + '"';
+                    line = line.replace(reg, '$1<a ' + href + ' class="vpl_fl" ' + data + '>' + lt + ':$2$3</a>');
+                    sh[i].setAnnotations(anot);
+                }
+            }
+            if (!used && lastAnotation) {
+                if (rawline !== '') {
+                    lastAnotation.text += "\n" + rawline;
+                    sh[lastAnotationFile].setAnnotations(sh[lastAnotationFile].getAnnotations());
+                } else {
+                    lastAnotation = false;
+                }
+            }
+            return line;
+        }
+        function getTitle(line) {
+            lastAnotation = false;
+            line = line.substr(1);
+            var end = regtitgra.exec(line);
+            if (end !== null) {
+                line = line.substr(0, line.length - end[0].length);
+            }
+            var html = '';
+            if ( folding ) {
+                html += '<a href="javascript:void(0)" onclick="VPL_Util.show_hide_div(this)">[+]</a>';
+            }
+            html += '<b class="ui-widget-header ui-corner-all">' + VPL_Util.sanitizeText(line) + '</b><br />';
+            html = genFileLinks(html, line);
+            return html;
+        }
+        function getComment() {
+            lastAnotation = false;
+            var ret = comment;
+            comment = '';
+            return ret;
+        }
+        function addComment(rawline) {
+            var line = VPL_Util.sanitizeText(rawline);
+            comment += genFileLinks(line, rawline) + '<br />';
+        }
+        function addCase(rawline) {
+            var line = VPL_Util.sanitizeText(rawline);
+            case_ += genFileLinks(line, rawline) + "\n";
+        }
+        function getCase() {
+            lastAnotation = false;
+            var ret = case_;
+            case_ = '';
+            return '<pre><i>' + ret + '</i></pre>';
+        }
+
+        for (i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if ( noFormat ) {
+                html += genFileLinks(VPL_Util.sanitizeText(line), line) + "\n";
+                continue;
+            }
+            var match = regcas.exec(line);
+            var regcasv = regcas.test(line);
+            if ((match !== null) != regcasv) {
+                console.log('error');
+            }
+            if (regtit.test(line)) {
+                switch (state) {
+                    case 'comment':
+                        html += getComment();
+                        break;
+                    case 'case':
+                        html += getCase();
+                        break;
+                }
+                if ( afterTitle ) {
+                    html += '</div>';
+                }
+                html += getTitle(line);
+                html += folding ? '<div style="display:none">' : '<div>';
+                afterTitle = true;
+                state = '';
+            } else if (regcasv) {
+                if ( state == 'comment' ) {
+                    html += getComment();
+                }
+                addCase(line.substr(match[0].length));
+                state = 'case';
+            } else {
+                if ( state == 'case' ) {
+                    html += getCase();
+                }
+                addComment(line);
+                state = 'comment';
+            }
+        }
+        switch (state) {
+            case 'comment':
+                html += getComment();
+                break;
+            case 'case':
+                html += getCase();
+                break;
+        }
+        if ( afterTitle ) {
+            html += '</div>';
+        }
+        return html;
     };
 
+    (function() {
+        var files = [];
+        var results = [];
+        var shs = [];
+
+        function SubmissionHighlighter(files, results) {
+            var self = this;
+            this.files = files;
+            this.results = results;
+            setTimeout(function() {self.highlight();}, 10);
+        }
+
+        SubmissionHighlighter.prototype.highlight = function(){
+            var self = this;
+            if ( typeof ace === 'undefined' ) {
+                setTimeout(function() {self.highlight();}, 100);
+                return;
+            }
+            var files = this.files;
+            var results = this.results;
+            var shFiles = [];
+            var shFileNames = [];
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var lang = VPL_Util.langType(VPL_Util.fileExtension( file.fileName ));
+                var tagId = file.tagId;
+                var sh = ace.edit( 'code' + tagId);
+                sh.setTheme( 'ace/theme/' + file.theme );
+                sh.getSession().setMode( 'ace/mode/' + lang );
+                sh.renderer.setShowGutter( file.showln );
+                sh.setReadOnly( true );
+                sh.setHighlightActiveLine( false );
+                sh.setAutoScrollEditorIntoView( true );
+                sh.setOption('maxLines', file.nl);
+                sh.getAnnotations = function(){
+                    return this.getSession().getAnnotations();
+                };
+                sh.setAnnotations = function(a){
+                    return this.getSession().setAnnotations(a);
+                };
+                sh.getTagId = function(){
+                    return this.vplTagId;
+                };
+                sh.vplTagId = tagId;
+                shFiles.push( sh );
+                shFileNames.push( file.fileName );
+                shs[ file.tagId ] = sh;
+            }
+            for (var ri = 0; ri < results.length; ri++) {
+                var tag = document.getElementById(results[ri].tagId);
+                var text = tag.textContent || tag.innerText;
+                tag.innerHTML = VPL_Util.processResult(text, shFileNames, shFiles,
+                                                       results[ri].noFormat, results[ri].folding);
+            }
+            for (var si = 0; si < shFiles.length; si++) {
+                shFiles[si].getSession().setUseWorker(false);
+            }
+        };
+
+        VPL_Util.addResults = function( tagId, noFormat, folding ){
+            results.push({ 'tagId' : tagId, 'noFormat' : noFormat, 'folding' : folding });
+        };
+        VPL_Util.syntaxHighlightFile = function( tagId, fileName, theme, showln, nl){
+            files.push({
+                'tagId' : tagId,
+                'fileName' : fileName,
+                'theme' : theme,
+                'showln' : showln,
+                'nl' : nl
+             });
+        };
+        VPL_Util.syntaxHighlight = function(){
+            if ( typeof ace === 'undefined' ) {
+                setTimeout(VPL_Util.syntaxHighlight, 100);
+                return;
+            }
+            new SubmissionHighlighter(files,results);
+            files = [];
+            results = [];
+        };
+        VPL_Util.flEventHandler = function( event ){
+            var tag = event.target.getAttribute('href').substring(1);
+            var line = event.target.getAttribute('data-line');
+            var sh = shs[tag];
+            sh.gotoLine(line, 0);
+            sh.scrollToLine(line, true);
+        };
+        VPL_Util.setflEventHandler = function(){
+            var links = document.getElementsByClassName("vpl_fl");
+            for(var i = 0; i < links.length; i++) {
+                links[i].onclick = VPL_Util.flEventHandler;
+            }
+        };
+        VPL_Util.show_hide_div = function (a){
+            var text = a;
+            var div = a;
+            if ( ! div.nextSibling ) {
+                div = div.parentNode;
+            }
+            div = div.nextSibling;
+            while ( div.nodeName != 'DIV' && div.nodeName != 'PRE' ) {
+                div = div.nextSibling;
+                if ( ! div ) {
+                    return;
+                }
+            }
+            if(text){
+                if(text.innerHTML == '[+]'){
+                    if ( div.savedDisplay ) {
+                        div.style.display = div.savedDisplay;
+                    } else {
+                        div.style.display = '';
+                    }
+                    text.innerHTML = '[-]';
+                }else{
+                    div.savedDisplay = div.style.display;
+                    div.style.display = 'none';
+                    text.innerHTML = '[+]';
+                }
+            }
+        };
+
+    })();
 })();

@@ -23,6 +23,8 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * @abstract class to represent files from any source
  */
@@ -188,7 +190,7 @@ class vpl_file_from_activity extends vpl_file_from_base {
         if ($user) {
             $ret .= '</a> ';
             $sub = new mod_vpl_submission( $vpl, $this->subid );
-            $ret .= $sub->print_grade_core() . '<br />';
+            $ret .= $sub->get_grade_core() . '<br />';
             $ret .= $vpl->user_fullname_picture( $user );
             $link = vpl_mod_href( '/similarity/user_similarity.php', 'id', $vpl->get_course()->id, 'userid', $user->id );
             $ret .= ' (<a href="' . $link . '">';
@@ -250,7 +252,7 @@ class vpl_similarity_preprocess {
         $from = null;
         $joinedfilesdata = '';
         foreach ($filelist as $filename) {
-            if (! isset( $filesselected [$filename] ) && ! $allfiles) {
+            if (! isset( $filesselected [ basename($filename) ] ) && ! $allfiles) {
                 continue;
             }
             $sim = vpl_similarity_factory::get( $filename );

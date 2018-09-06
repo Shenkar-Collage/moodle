@@ -20,6 +20,11 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
+
+/* globals VPL_IDEButtons: true */
+/* globals VPL_Util */
+/* globals $JQVPL */
+
 (function() {
     if (!window.VPL_IDEButtons) {
         VPL_IDEButtons = function(menu_element, isOptionAllowed) {
@@ -49,6 +54,17 @@
                 }
                 $JQVPL('#vpl_ide_' + button).attr('title', title);
                 $JQVPL('#vpl_ide_' + button + ' i').replaceWith(VPL_Util.gen_icon(icon));
+            };
+            this.setExtracontent = function(button, html) {
+                if (self.noAdded(button)) {
+                    return;
+                }
+                var cl = 'bt_extrahtml';
+                var btag = $JQVPL('#vpl_ide_' + button + ' i');
+                if (btag.find('.' + cl).length == 0) {
+                    btag.append(' <span class="' + cl + '"><span>');
+                }
+                btag.find('.' + cl).html(html);
             };
             this.add = function(button) {
                 if (typeof button === 'string') {
@@ -131,15 +147,17 @@
                     var commands = editor.commands.commands;
                     var platform = editor.commands.platform;
                     for (var button in buttons) {
-                        var editorName = buttons[button].editorName;
-                        if (commands[editorName] && commands[editorName].bindKey && !buttons[button].Key) {
-                            buttons[button].key = commands[editorName].bindKey[platform];
-                            self.setText(button);
-                        } else {
-                            if (buttons[button].bindKey) {
-                                if (!buttons[button].hasOwnProperty('key')) {
-                                    buttons[button].key = buttons[button].bindKey[platform];
-                                    self.setText(button);
+                        if ( buttons.hasOwnProperty(button) ) {
+                            var editorName = buttons[button].editorName;
+                            if (commands[editorName] && commands[editorName].bindKey && !buttons[button].Key) {
+                                buttons[button].key = commands[editorName].bindKey[platform];
+                                self.setText(button);
+                            } else {
+                                if (buttons[button].bindKey) {
+                                    if (!buttons[button].hasOwnProperty('key')) {
+                                        buttons[button].key = buttons[button].bindKey[platform];
+                                        self.setText(button);
+                                    }
                                 }
                             }
                         }
@@ -252,22 +270,23 @@
                 var timeLeft = 0;
                 var update = function() {
                     var now = self.multiple(VPL_Util.getCurrentTime(), precision);
-                    if (now == lastLap || element == null) {
+                    if (now === lastLap || element === null) {
                         return;
                     }
                     lastLap = now;
                     var tl = timeLeft - (lastLap - start);
-                    var thtml = VPL_Util.gen_icon('timeleft');
-                    if (show) {
-                        thtml += ' ' + VPL_Util.getTimeLeft(tl);
-                    }
                     var cssclass = '';
                     if (tl <= 0) {
                         cssclass = 'vpl_buttonleft_black';
                     } else if (tl <= 5 * 60) {
+                        show = true;
                         cssclass = 'vpl_buttonleft_red';
                     } else if (tl <= 15 * 60) {
                         cssclass = 'vpl_buttonleft_orange';
+                    }
+                    var thtml = VPL_Util.gen_icon('timeleft');
+                    if (show) {
+                        thtml += ' ' + VPL_Util.getTimeLeft(tl);
                     }
                     element.html(thtml);
                     element.removeClass(cssclases).addClass(cssclass);
@@ -279,7 +298,7 @@
                 };
                 self.setTimeLeft = function(options) {
                     element = $JQVPL('#vpl_ide_timeleft span');
-                    if (interval != false) {
+                    if (interval !== false) {
                         clearInterval(interval);
                         interval = false;
                     }
@@ -300,8 +319,8 @@
                         start = self.multiple(VPL_Util.getCurrentTime(), precision);
                         lastLap = start - 1;
                         update();
-                        setTimeout(() => {
-                            interval = setInterval(update, checkt);                            
+                        setTimeout( function() {
+                            interval = setInterval(update, checkt);
                         }, sync * 1000);
                     } else {
                         $JQVPL('#vpl_ide_timeleft').hide();

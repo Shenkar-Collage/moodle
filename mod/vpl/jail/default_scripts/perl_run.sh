@@ -5,7 +5,8 @@
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 # Author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
 
-#load common script and check programs
+# @vpl_script_description Using "perl -w" with first file
+# load common script and check programs
 . common_script.sh
 check_program perl
 if [ "$1" == "version" ] ; then
@@ -15,5 +16,5 @@ if [ "$1" == "version" ] ; then
 	exit
 fi
 cat common_script.sh > vpl_execution
-echo "perl -w $VPL_SUBFILE0" >>vpl_execution
+echo "perl -w $VPL_SUBFILE0 \$@" >>vpl_execution
 chmod +x vpl_execution

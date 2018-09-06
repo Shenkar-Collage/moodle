@@ -20,11 +20,11 @@ function getClassFile {
 }
 function hasMain {
 	local FILE=$(getClassFile "$1")
-	local CLASSNAME=$(getClassName "$1")
-	local COMPNAME=$(echo "$1" |sed 's/\./\\/g')
+	cat -v $FILE | grep -E "\^A\^@\^Dmain\^A\^@\^V\(\[Ljava/lang/String;\)" &> /dev/null
 }
 
-#load common script and check programs
+# @vpl_script_description Using default javac, run JUnit if detected
+# load common script and check programs
 . common_script.sh
 
 check_program javac
@@ -40,18 +40,18 @@ if [ -f $JUNIT4 ] ; then
 	export CLASSPATH=$CLASSPATH:$JUNIT4
 fi
 get_source_files java
-#compile all .java files
+# compile all .java files
 
-javac -Xlint:deprecation $SOURCE_FILES
+javac -Xlint:deprecation $2 $SOURCE_FILES
 if [ "$?" -ne "0" ] ; then
 	echo "Not compiled"
  	exit 0
 fi
-#Search main procedure class
+# Search main procedure class
 MAINCLASS=
 for FILENAME in $SOURCE_FILES
 do
-	egrep "void[ \t]+main[ \t]*\(" $FILENAME &> /dev/null
+	hasMain "$FILENAME"
 	if [ "$?" -eq "0" ]	; then
 		MAINCLASS=$(getClassName "$FILENAME")
 		break
@@ -60,7 +60,7 @@ done
 if [ "$MAINCLASS" = "" ] ; then
 	for FILENAME in $SOURCE_FILES
 	do
-		egrep "void[ \t]+main[ \t]*\(" $FILENAME &> /dev/null
+		hasMain "$FILENAME"
 		if [ "$?" -eq "0" ]	; then
 			MAINCLASS=$(getClassName "$FILENAME")
 			break
@@ -68,7 +68,7 @@ if [ "$MAINCLASS" = "" ] ; then
 	done
 fi
 if [ "$MAINCLASS" = "" ] ; then
-#Search for junit4 test classes
+# Search for junit4 test classes
 	TESTCLASS=
 	for FILENAME in $SOURCE_FILES
 	do
@@ -87,9 +87,9 @@ fi
 cat common_script.sh > vpl_execution
 echo "export CLASSPATH=$CLASSPATH" >> vpl_execution
 if [ ! "$MAINCLASS" = "" ] ; then
-	echo "java -enableassertions $MAINCLASS" >> vpl_execution
+	echo "java -enableassertions $MAINCLASS \$@" >> vpl_execution
 else
-	echo "java org.junit.runner.JUnitCore $TESTCLASS" >> vpl_execution
+	echo "java org.junit.runner.JUnitCore $TESTCLASS \$@" >> vpl_execution
 fi
 chmod +x vpl_execution
 for FILENAME in $SOURCE_FILES

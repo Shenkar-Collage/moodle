@@ -23,6 +23,12 @@
  * @author        Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+require_once(dirname( __FILE__ ) . '/../../../config.php');
+require_once(dirname( __FILE__ ) . '/vpl_graph.class.php');
+require_once(dirname( __FILE__ ) . '/../locallib.php');
+require_once(dirname( __FILE__ ) . '/../vpl.class.php');
+require_once(dirname( __FILE__ ) . '/../vpl_submission.class.php');
+
 function vpl_get_working_periods($vpl, $userid) {
     $submissionslist = $vpl->user_submissions( $userid );
     if (count( $submissionslist ) == 0) {
@@ -60,11 +66,6 @@ function vpl_get_working_periods($vpl, $userid) {
     }
     return $workperiods;
 }
-
-require_once(dirname( __FILE__ ) . '/vpl_graph.class.php');
-require_once(dirname( __FILE__ ) . '/../locallib.php');
-require_once(dirname( __FILE__ ) . '/../vpl.class.php');
-require_once(dirname( __FILE__ ) . '/../vpl_submission.class.php');
 
 require_login();
 

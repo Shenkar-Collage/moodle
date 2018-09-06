@@ -204,5 +204,105 @@ function xmldb_vpl_upgrade($oldversion = 0) {
         // VPL savepoint reached.
         upgrade_mod_savepoint( true, 2013111512, 'vpl' );
     }
+
+    $vpl33 = 2017112412;
+    if ($oldversion < $vpl33) {
+        // Define field nevaluations to be added to vpl_submissions.
+        $table = new xmldb_table('vpl_submissions');
+        $field = new xmldb_field('nevaluations', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'highlight');
+
+        // Conditionally launch add field nevaluations.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('groupid', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'nevaluations');
+
+        // Conditionally launch add field groupid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field nevaluations to be added to vpl_submissions.
+        $table = new xmldb_table('vpl');
+        $field = new xmldb_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'emailteachers');
+        // Conditionally launch add field nevaluations.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('freeevaluations', XMLDB_TYPE_INTEGER, '10', null, null, null, '0', 'timemodified');
+        // Conditionally launch add field nevaluations.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('reductionbyevaluation', XMLDB_TYPE_CHAR, '10', null, null, null, '0', 'freeevaluations');
+        // Conditionally launch add field groupid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $DB->delete_records('vpl_jailservers');
+        $table = new xmldb_table('vpl_jailservers');
+        $key = new xmldb_key('servers_key', XMLDB_KEY_UNIQUE, array('server'));
+        // Launch drop key servers_key.
+        $dbman->drop_key($table, $key);
+
+        $field = new xmldb_field('serverhash', XMLDB_TYPE_INTEGER, '20', null, null, null, '0', 'nbusy');
+        // Conditionally launch add field serverhash.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $index = new xmldb_index('serverhash_idx', XMLDB_INDEX_NOTUNIQUE, array('serverhash'));
+        // Conditionally launch add index serverhash_idx.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+        // Vpl savepoint reached.
+        upgrade_mod_savepoint(true, $vpl33, 'vpl');
+    }
+    $vpl331 = 2017121312;
+    if ($oldversion < $vpl331) {
+        // Define field sebrequired to be added to vpl.
+        $table = new xmldb_table('vpl');
+        $field = new xmldb_field('sebrequired', XMLDB_TYPE_INTEGER, '2', null, null, null, '0', 'reductionbyevaluation');
+
+        // Conditionally launch add field sebrequired.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('sebkeys', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'sebrequired');
+
+        // Conditionally launch add field sebkeys.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('runscript', XMLDB_TYPE_CHAR, '63', null, null, null, null, 'sebkeys');
+
+        // Conditionally launch add field runscript.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('debugscript', XMLDB_TYPE_CHAR, '63', null, null, null, null, 'runscript');
+
+        // Conditionally launch add field debugscript.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('worktype', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'jailservers');
+
+        // Conditionally launch add field worktype.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Vpl savepoint reached.
+        upgrade_mod_savepoint(true, $vpl331, 'vpl');
+    }
     return true;
 }

@@ -27,6 +27,7 @@ $string ['allfiles'] = 'All files';
 $string ['allsubmissions'] = 'All submissions';
 $string ['anyfile'] = 'Any file';
 $string ['attemptnumber'] = 'Attempt number {$a}';
+$string ['autodetect'] = 'Autodetect';
 $string ['automaticevaluation'] = 'Automatic evaluation';
 $string ['automaticgrading'] = 'Automatic grade';
 $string ['averageperiods'] = 'Average periods {$a}';
@@ -54,6 +55,8 @@ $string ['cut'] = 'Cut';
 $string ['datesubmitted'] = 'Date submitted';
 $string ['debug'] = 'Debug';
 $string ['debugging'] = 'Debugging';
+$string ['debugscript'] = 'Debug script';
+$string ['debugscript_help'] = 'Select the debug script to use in this activity';
 $string ['defaultexefilesize'] = 'Maximum default execution file size';
 $string ['defaultexememory'] = 'Maximum default memory used';
 $string ['defaultexeprocesses'] = 'Maximum default number of processes';
@@ -70,9 +73,11 @@ $string ['discard_submission_period'] = 'Discard submission period';
 $string ['discard_submission_period_description'] = 'For each student and assignment, the system tries to discard submissions. The system keep the last one and at least a submission for every period';
 $string ['download'] = 'Download';
 $string ['downloadallsubmissions'] = 'Download all submissions';
+$string ['downloadsubmissions'] = 'Download submissions';
 $string ['duedate'] = 'Due date';
 $string ['edit'] = 'Edit';
 $string ['editing'] = 'Editing';
+$string ['editortheme'] = 'Editor theme';
 $string ['evaluate'] = 'Evaluate';
 $string ['evaluateonsubmission'] = 'Evaluate just on submission';
 $string ['evaluating'] = 'Evaluating';
@@ -95,8 +100,16 @@ $string ['filesChangedNotSaved'] = 'Files have changed but they have not been sa
 $string ['filesNotChanged'] = 'Files have not changed';
 $string ['filestoscan'] = 'Files to scan';
 $string ['fileupdated'] = "The '{\$a}' file has been updated";
+$string ['finalreduction'] = 'Final reduction';
+$string ['finalreduction_help'] = '<b>FR [NE/FE R]</b><br>
+<b>FR</b> Final grade reduction.<br>
+<b>NE</b> Automatic evaluations requested by the student.<br>
+<b>FE</b> Free evaluations allowed.<br>
+<b>R</b> Grade reduction by evaluation. If it is a percent, it is apply over previous result.<br>';
 $string ['find'] = "Find";
 $string ['find_replace'] = 'Find/Replace';
+$string ['freeevaluations'] = 'Free evaluations';
+$string ['freeevaluations_help'] = 'Number of automatic evaluations that do not reduce final score';
 $string ['fulldescription'] = 'Full description';
 $string ['fullscreen'] = 'Fullscreen';
 $string ['getjails'] = 'Get execution servers';
@@ -153,6 +166,8 @@ $string ['minsimlevel'] = 'Minimum similarity level to show';
 $string ['moduleconfigtitle'] = 'VPL Module Config';
 $string ['modulename'] = 'Virtual programming lab';
 $string ['modulenameplural'] = 'Virtual programming labs';
+$string ['multidelete'] = 'Multiple delete';
+$string ['nevaluations'] = '{$a} automatic evaluations done';
 $string ['new'] = 'New';
 $string ['new_file_name'] = 'New file name';
 $string ['next'] = 'Next';
@@ -183,6 +198,8 @@ $string ['proposedgrade'] = 'Proposed grade: {$a}';
 $string ['proxy'] = 'proxy';
 $string ['proxy_description'] = 'Proxy from Moodle to execution servers';
 $string ['redo'] = 'Redo';
+$string ['reductionbyevaluation'] = "Reduction by automatic evaluation";
+$string ['reductionbyevaluation_help'] = "Reduce final score by a value or percentage for each automatic evaluation requested by the student";
 $string ['regularscreen'] = 'Regular screen';
 $string ['removegrade'] = 'Remove grade';
 $string ['rename'] = 'Rename';
@@ -198,6 +215,8 @@ $string ['restrictededitor'] = 'Dissable external file upload, paste and drop ex
 $string ['retrieve'] = 'Retrieve results';
 $string ['run'] = 'Run';
 $string ['running'] = 'Running';
+$string ['runscript'] = 'Run script';
+$string ['runscript_help'] = 'Select the run script to use in this activity';
 $string ['save'] = 'Save';
 $string ['save'] = 'Save';
 $string ['savecontinue'] = 'Save and continue';
@@ -211,6 +230,10 @@ $string ['scanningdir'] = 'Scanning directory ...';
 $string ['scanoptions'] = 'Scan options';
 $string ['scanother'] = 'Scan similarities in added sources';
 $string ['scanzipfile'] = 'Zip file';
+$string ['sebkeys'] = 'SEB exam Key/s';
+$string ['sebkeys_help'] = 'SEB exam key(s) (max 3) obtained from .seb file<br>It is more reliable than only browser check.<br>https://safeexambrowser.org';
+$string ['sebrequired'] = 'SEB browser required';
+$string ['sebrequired_help'] = 'Using SEB browser properly configured is required';
 $string ['select_all'] = 'Select all';
 $string ['server'] = 'Server';
 $string ['serverexecutionerror'] = 'Server execution error';
@@ -393,19 +416,19 @@ $string ['requestedfiles_help'] = '<p>Here you set names and its initial content
 $string ['resourcelimits_help'] = '<p>You can set limits for the execution time, the memory used, the execution files sizes and the number of processes to be executed simultaneously.</p>
 <p>These limits are used when running the scripting files vpl_run.sh, vpl_debug.sh and vpl_evaluate.sh and the file vpl_execution built by them.</p>
 <p>If this activity is based on other activity, the limits can be affected by those set in the base activity and its ancestors or in the global configuration of the module.</p>';
-$string ['testcases_help'] = '<p>This feature allows to run the student program and check its output for a given input.  To set up the evaluation cases you must populate the file &quot;vpl_evaluate.cases&quot;.</p>
-<p>The file "vpl_evaluate.cases" has the following format:
+$string ['testcases_help'] = 'This feature allows to run the student program and check its output for a given input. To set up the evaluation cases you must populate the file &quot;vpl_evaluate.cases&quot;.<br>
+The file "vpl_evaluate.cases" has the following format:<br>
 <ul>
-<li> "<strong>case </strong>= Description of case": Optional. Set an start of test case definition.</li>
-<li> "<strong>input </strong>= text": can use several lines. Ends with other instruction.</li>
-<li> "<strong>output </strong>= text": can use several lines. Ends with other instruction. A case can have differents correct output. There are three types of output: numbers, text and exact test:
+<li> "<b>case </b>= Description of case": Set an start of test case definition.</li>
+<li> "<b>input </b>= text": can use several lines. Ends with other instruction.</li>
+<li> "<b>output </b>= text": can use several lines. Ends with other instruction. A case can have differents correct output. There are three types of output: numbers, text and exact test:
 <ul>
-<li> <strong>number</strong>: defined as sequence of numbers (integers and floats). Only numbers in the output are checked, other text are ignored. Floats are checked with tolerance</li>
-<li> <strong>text</strong>: defined as text without double quote. Only words are checked and the rest of chars are ignored, the comparation is case-insensitive </li>
-<li> <strong>exact text</strong>: defined as text into double quote. The exact match is used to test the output.</li>
+<li> <b>number</b>: defined as sequence of numbers (integers and floats). Only numbers in the output are checked, other text are ignored. Floats are checked with tolerance</li>
+<li> <b>text</b>: defined as text without double quote. Only words are checked and the rest of chars are ignored, the comparation is case-insensitive </li>
+<li> <b>exact text</b>: defined as text into double quote. The exact match is used to test the output.</li>
 </ul>
 </li>
-<li> "<strong>grade reduction</strong> = [value|percentage%]" : By default an error reduces student\'s grade (starts with maxgrade) by (grade_range/number of cases) but with this instruction
+<li> "<b>grade reduction</b> = [value|percentage%]" : By default an error reduces student\'s grade (starts with maxgrade) by (grade_range/number of cases) but with this instruction
 you can change the reduction value or percentage.</li>
 </ul>';
 $string ['variations_help'] = '<p>A set of variations can be defined for an activity. These variations are randomly assigned to the students.</p>

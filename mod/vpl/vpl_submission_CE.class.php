@@ -43,6 +43,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
             'clj' => 'clojure',
             'cs' => 'csharp',
             'd' => 'd',
+            'erl' => 'erlang',
             'go' => 'go',
             'java' => 'java',
             'js' => 'javascript',
@@ -115,16 +116,21 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
     /**
      * Return the default script to manage the action and detected language
      *
-     * @param $script 'vpl_run.sh','vpl_debug.sh'
-     *            o 'vpl_evaluate.sh'
-     * @param $pln Programming
-     *            Language Name
+     * @param $script string 'vpl_run.sh','vpl_debug.sh' o 'vpl_evaluate.sh'
+     * @param $pln string Programming Language Name
+     * @param $data object execution data
+     *
      * @return array key=>filename value =>filedata
      */
-    public function get_default_script($script, $pln) {
+    public function get_default_script($script, $pln, $data) {
+        $vplinstance = $this->vpl->get_instance();
         $ret = array ();
         $path = dirname( __FILE__ ) . '/jail/default_scripts/';
         $scripttype = self::$scriptname [$script];
+        $field = $scripttype . 'script';
+        if ( $data->$field > '' ) {
+            $pln = $vplinstance->$field;
+        }
         $filename = $path . $pln . '_' . $scripttype . '.sh';
         if (file_exists( $filename )) {
             $ret [$script] = file_get_contents( $filename );
@@ -147,7 +153,9 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
                     if ($filename == "." || $filename == "..") {
                         continue;
                     }
-                    if (substr( $filename, - 7 ) == '_run.sh' || substr( $filename, - 9 ) == '_hello.sh') {
+                    if (substr( $filename, - 7 ) == '_run.sh' ||
+                        substr( $filename, - 9 ) == '_hello.sh' ||
+                        substr( $filename, - 9 ) == '_debug.sh' ) {
                         $ret [$filename] = file_get_contents( $path . $filename );
                     }
                 }
@@ -191,6 +199,8 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
             $data->maxmemory = ( int ) $plugincfg->defaultexememory;
             $data->maxprocesses = ( int ) $plugincfg->defaultexeprocesses;
             $data->jailservers = '';
+            $data->runscript = $vplinstance->runscript;
+            $data->debugscript = $vplinstance->debugscript;
         }
         // Execution files.
         $sfg = $vpl->get_execution_fgm();
@@ -227,6 +237,12 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         // Add jailserver list.
         if ($vpl->get_instance()->jailservers > '') {
             $data->jailservers .= "\n" . $vpl->get_instance()->jailservers;
+        }
+        if ( $vplinstance->runscript > '' ) {
+            $data->runscript = $vplinstance->runscript;
+        }
+        if ( $vplinstance->debugscript > '' ) {
+            $data->debugscript = $vplinstance->debugscript;
         }
 
         if ($call > 0) { // Stop if at recursive call.
@@ -288,9 +304,11 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         }
         $info .= 'export VPL_SUBFILES="' . $filenames . "\"\n";
         // Add identifications of variations if exist.
+        $info .= vpl_bash_export( 'VPL_VARIATION', '' );
         $varids = $vpl->get_variation_identification( $this->instance->userid );
         foreach ($varids as $id => $varid) {
             $info .= vpl_bash_export( 'VPL_VARIATION' . $id, $varid );
+            $info .= vpl_bash_export( 'VPL_VARIATION', $varid );
         }
         for ($i = 0; $i <= $type; $i ++) {
             $script = self::$scriptlist [$i];
@@ -300,7 +318,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
                     $data->files [$script] = "#!/bin/bash\n" . $data->files [$script];
                 }
             } else {
-                $filesadded = $this->get_default_script( $script, $pln );
+                $filesadded = $this->get_default_script( $script, $pln, $data );
                 foreach ($filesadded as $filename => $filedata) {
                     if (trim( $filedata ) > '') {
                         $data->files [$filename] = $filedata;

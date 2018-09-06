@@ -40,6 +40,7 @@
  * path/usersdata/userid#/submissionid#/teachertest.txt
  * path/usersdata/userid#/submissionid#/studenttest.txt
  */
+defined('MOODLE_INTERNAL') || die();
 
 require_once(dirname(__FILE__).'/filegroup.class.php');
 require_once(dirname(__FILE__).'/lib.php');
@@ -104,7 +105,7 @@ class file_group_execution extends file_group_process {
      * @return string[]
      */
     public function getfilekeeplist() {
-        return vpl_read_list_from_file( $this->filelistname . '.keep' );
+        return file_group_process::read_list( $this->filelistname . '.keep' );
     }
 
     /**
@@ -113,7 +114,7 @@ class file_group_execution extends file_group_process {
      * @param string[] $filelist
      */
     public function setfilekeeplist($filelist) {
-        vpl_write_list_to_file( $this->filelistname . '.keep', $filelist );
+        file_group_process::write_list( $this->filelistname . '.keep', $filelist );
     }
 }
 class mod_vpl {
@@ -165,7 +166,7 @@ class mod_vpl {
         global $DB;
         if ($id) {
             if (! $this->cm = get_coursemodule_from_id( VPL, $id )) {
-                print_error( 'invalidcoursemodule' );
+                print_error( 'invalidcoursemodule');
             }
             if (! $this->course = $DB->get_record( "course", array (
                     "id" => $this->cm->course
@@ -177,6 +178,7 @@ class mod_vpl {
             ) )) {
                 print_error( 'module instance id unknow' );
             }
+            $this->instance->cmidnumber = $this->cm->id;
         } else {
             if (! $this->instance = $DB->get_record( VPL, array (
                     "id" => $a
@@ -190,8 +192,10 @@ class mod_vpl {
                 print_error( 'unknowncourseidnumber', '', $this->instance->course );
             }
             if (! $this->cm = get_coursemodule_from_instance( VPL, $this->instance->id, $this->course->id )) {
-                echo $OUTPUT->box( get_string( 'invalidcoursemodule' ) . ' VPL id=' . $a );
+                vpl_notice( get_string( 'invalidcoursemodule', 'error' ) . ' VPL id=' . $a );
                 // Don't stop on error. This let delete a corrupted course.
+            } else {
+                $this->instance->cmidnumber = $this->cm->id;
             }
         }
         $this->requiredfgm = null;
@@ -254,6 +258,17 @@ class mod_vpl {
     }
 
     /**
+     * Update a VPL instance including timemodified
+     *
+     * @return bool true if all OK
+     */
+    public function update() {
+        global $DB;
+        $this->instance->timemodified = time();
+        return $DB->update_record( VPL, $this->instance );
+    }
+
+    /**
      *
      * @return instance data directory
      */
@@ -291,7 +306,7 @@ class mod_vpl {
      * @return array of files required name
      */
     public function get_required_files() {
-        return vpl_read_list_from_file( $this->get_required_files_filename() );
+        return file_group_process::read_list( $this->get_required_files_filename() );
     }
 
     /**
@@ -300,7 +315,7 @@ class mod_vpl {
      *            of required files
      */
     public function set_required_files($files) {
-        vpl_write_list_to_file( $this->get_required_files_filename(), $files );
+        file_group_process::write_list( $this->get_required_files_filename(), $files );
     }
 
     /**
@@ -337,7 +352,7 @@ class mod_vpl {
      * @return array of files execution name
      */
     public function get_execution_files() {
-        return vpl_read_list_from_file( $this->get_execution_files_filename() );
+        return file_group_process::read_list( $this->get_execution_files_filename() );
     }
 
     /**
@@ -482,14 +497,14 @@ class mod_vpl {
     /**
      * Get password
      */
-    public function get_password() {
+    protected function get_password() {
         return trim( $this->instance->password );
     }
 
     /**
      * Get password md5
      */
-    public function get_password_md5() {
+    protected function get_password_md5() {
         return md5( $this->instance->id . (sesskey()) );
     }
 
@@ -501,8 +516,9 @@ class mod_vpl {
         if ($password > '') {
             global $SESSION;
             $passwordmd5 = $this->get_password_md5();
-            $pasvar = 'vpl_password_' . $this->instance->id;
-            if (isset( $SESSION->$pasvar ) && $SESSION->$pasvar == $passwordmd5) {
+            $passvar = 'vpl_password_' . $this->instance->id;
+            $passattempt = 'vpl_password_attempt' . $this->instance->id;
+            if (isset( $SESSION->$passvar ) && $SESSION->$passvar == $passwordmd5) {
                 return true;
             }
             if ($passset == '') {
@@ -510,17 +526,17 @@ class mod_vpl {
             }
             if ($passset > '') {
                 if ($passset == $password) {
-                    $SESSION->$pasvar = $passwordmd5;
-                    unset( $SESSION->vpl_attempt_number );
+                    $SESSION->$passvar = $passwordmd5;
+                    unset( $SESSION->$passattempt );
                     return true;
                 }
-                if (isset( $SESSION->vpl_attempt_number )) {
-                    $SESSION->vpl_attempt_number ++;
+                if (isset( $SESSION->$passattempt )) {
+                    $SESSION->$passattempt ++;
                 } else {
-                    $SESSION->vpl_attempt_number = 1;
+                    $SESSION->$passattempt = 1;
                 }
                 // Wait vpl_attempt_number seg to limit force brute crack.
-                sleep( $SESSION->vpl_attempt_number );
+                sleep( $SESSION->$passattempt );
             }
             return false;
         }
@@ -530,11 +546,20 @@ class mod_vpl {
     /**
      * Check password restriction
      */
-    public function password_check() {
+    protected function password_check() {
+        global $SESSION;
         if (! $this->pass_password_check()) {
+            if ( constant( 'AJAX_SCRIPT' ) ) {
+                throw new Exception( get_string( 'requiredpassword', VPL ) );
+            }
             require_once('forms/password_form.php');
             $this->print_header();
-            $mform = new mod_vpl_password_form( $_SERVER ['SCRIPT_NAME'] );
+            $mform = new mod_vpl_password_form( $_SERVER ['SCRIPT_NAME'], $this);
+            $passattempt = 'vpl_password_attempt' . $this->get_instance()->id;
+            if (isset( $SESSION->$passattempt)) {
+                vpl_notice( get_string( 'attemptnumber', VPL, $SESSION->$passattempt),
+                            'warning');
+            }
             $mform->display();
             $this->print_footer();
             die();
@@ -543,35 +568,90 @@ class mod_vpl {
 
     /**
      * Check network restriction and return true o false
-     * @param $netreq Network field may be a combination of ip, netmask and domain comma separated to check.
-     * @param $ip the IP to check
      * @return boolean
      */
-    public function pass_network_check($netreq = null, $ip = null) {
-        if ($netreq === null) {
-            $netreq = $this->instance->requirednet;
-        }
-        $netreq = trim( $netreq );
-        if ($netreq == '') { // No net required.
-            return true;
-        }
-        if ($ip === null) {
-            $ip = getremoteaddr();
-        }
-        return address_in_subnet( $ip, $netreq );
+    public function pass_network_check() {
+        return vpl_check_network( $this->instance->requirednet );
     }
 
     /**
      * Check netword restriction and show error if not passed
+     * @return void
      */
-    public function network_check() {
+    protected function network_check() {
         global $OUTPUT;
         if (! $this->pass_network_check()) {
+            $str = get_string( 'opnotallowfromclient', VPL ) . ' ' . getremoteaddr();
+            if ( constant( 'AJAX_SCRIPT') ) {
+                throw new Exception( $str );
+            }
             $this->print_header();
-            echo $OUTPUT->box( get_string( 'opnotallowfromclient', VPL ) . ' ' . getremoteaddr() );
+            vpl_notice( $str , 'warning');
             $this->print_footer();
             die();
         }
+    }
+
+    /**
+     * Checks if SEB key is valid
+     * @return void
+     */
+    protected function is_sebkey_valid() {
+        global $FULLME;
+        $keys = trim($this->get_instance()->sebkeys);
+        if ( $keys == '') {
+            return true;
+        }
+        if ( ! isset($_SERVER['HTTP_X_SAFEEXAMBROWSER_REQUESTHASH']) ) {
+            return false;
+        }
+        $key = $_SERVER['HTTP_X_SAFEEXAMBROWSER_REQUESTHASH'];
+        foreach (preg_split('/\s+/', $keys) as $testkey) {
+            if (hash('sha256', $FULLME . $testkey) === $key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks SEB restrictions and shows error if not passed
+     * @return void
+     */
+    protected function seb_check() {
+        $inst = $this->get_instance();
+        $fail = $inst->sebrequired > 0;
+        $fail = $fail && strpos($_SERVER['HTTP_USER_AGENT'], 'SEB') === false;
+        $fail = $fail || ! $this->is_sebkey_valid();
+        if ( $fail ) {
+            $str = get_string( 'sebrequired_help', VPL );
+            if ( constant( 'AJAX_SCRIPT') ) {
+                throw new Exception( $str );
+            }
+            $this->print_header();
+            vpl_notice( $str , 'warning');
+            $this->print_footer();
+            die();
+        }
+    }
+
+    /**
+     * Return true if is set to use SEB
+     * @return void
+     */
+    protected function use_seb() {
+        $inst = $this->get_instance();
+        return $inst->sebrequired || $inst->sebkeys > '';
+    }
+
+    /**
+     * Checks all restrictions and shows error if not passed
+     * @return void
+     */
+    public function restrictions_check() {
+        $this->network_check();
+        $this->password_check();
+        $this->seb_check();
     }
 
     /**
@@ -629,29 +709,32 @@ class mod_vpl {
         if (! $this->pass_submission_restriction( $files, $error )) {
             return false;
         }
-        if ($this->is_group_activity()) {
-            $liderid = $this->get_group_leaderid( $userid );
-            if ($liderid == 0) { // No group or inconsistence.
-                if ($this->has_capability( VPL_MANAGE_CAPABILITY ) || ($this->has_capability(
-                        VPL_GRADE_CAPABILITY ) && ($userid == $USER->id))) {
-                    // Is manager or grader own submission.
-                    $liderid = $userid;
-                } else {
-                    $error = get_string( 'notsaved', VPL ) . "\n" . get_string( 'inconsistentgroup', VPL );
-                    return false;
+        $group = $this->get_usergroup($userid);
+        if ($this->is_group_activity() && $group === false) {
+            $error = get_string( 'notsaved', VPL ) . "\n" . get_string( 'inconsistentgroup', VPL );
+            return false;
+        }
+        $submittedby = '';
+        if ($USER->id != $userid ) {
+            if ($this->has_capability( VPL_MANAGE_CAPABILITY ) || ($this->has_capability(
+                    VPL_GRADE_CAPABILITY ) )) {
+                if (! $this->is_group_activity() ) {
+                    $user = $DB->get_record( 'user', array (
+                            'id' => $USER->id
+                    ) );
+                    $submittedby = get_string( 'submittedby', VPL, fullname( $user ) ) . "\n";
+                    if (strpos($comments, $submittedby) === 0 ) {
+                        $submittedby = '';
+                    }
                 }
+            } else {
+                $error = get_string( 'notsaved', VPL ) . "\n" . get_string( 'inconsistentgroup', VPL );
+                return false;
             }
-            $userid = $liderid;
         }
-        // Grader submmission or group activity.
-        if ($USER->id != $userid || $this->is_group_activity()) {
-            $user = $DB->get_record( 'user', array (
-                    'id' => $USER->id
-            ) );
-            $submittedby = get_string( 'submittedby', VPL, fullname( $user ) ) . "\n";
-        } else {
-            $submittedby = '';
-        }
+        $saveduserid = $this->is_group_activity() ? $USER->id : $userid;
+        $lastsub = false;
+        $lock = new \mod_vpl\util\lock($this->get_users_data_directory() . '/' . $saveduserid);
         if (($lastsubins = $this->last_user_submission( $userid )) !== false) {
             $lastsub = new mod_vpl_submission( $this, $lastsubins );
             if ($lastsub->is_equal_to( $files, $submittedby . $comments )) {
@@ -662,9 +745,15 @@ class mod_vpl {
         // Create submission record.
         $submissiondata = new stdClass();
         $submissiondata->vpl = $this->get_instance()->id;
-        $submissiondata->userid = $userid;
+        $submissiondata->userid = $saveduserid;
         $submissiondata->datesubmitted = time();
         $submissiondata->comments = $submittedby . $comments;
+        if ( $lastsubins !== false ) {
+            $submissiondata->nevaluations = $lastsubins->nevaluations;
+        }
+        if ( $group !== false ) {
+            $submissiondata->groupid = $group->id;
+        }
         $submissionid = $DB->insert_record( 'vpl_submissions', $submissiondata, true );
         if (! $submissionid) {
             $error = get_string( 'notsaved', VPL ) . "\ninserting vpl_submissions record";
@@ -672,10 +761,10 @@ class mod_vpl {
         }
         // Save files.
         $submission = new mod_vpl_submission( $this, $submissionid );
-        $submission->set_submitted_file( $files );
+        $submission->set_submitted_file( $files, $lastsub );
         $submission->remove_grade();
         // If no submitted by grader and not group activity, remove near submmissions.
-        if ($submittedby == '') {
+        if ($USER->id == $userid) {
             $this->delete_overflow_submissions( $userid );
         }
         return $submissionid;
@@ -690,22 +779,31 @@ class mod_vpl {
      */
     public function user_submissions($userid) {
         global $DB;
+
         if ($this->is_group_activity()) {
-            $userid = $this->get_group_leaderid( $userid );
-            if ($userid == 0) {
+            $group = $this->get_usergroup($userid);
+            if ($group) {
+                $select = '(groupid = ?) AND (vpl = ?)';
+                $parms = array (
+                        $group->id,
+                        $this->instance->id
+                );
+            } else {
                 return array ();
             }
+        } else {
+            $select = '(userid = ?) AND (vpl = ?)';
+            $parms = array (
+                    $userid,
+                    $this->instance->id
+            );
         }
-        $select = '(userid = ?) AND (vpl = ?)';
-        $parms = array (
-                $userid,
-                $this->instance->id
-        );
+
         return $DB->get_records_select( 'vpl_submissions', $select, $parms, 'id DESC' );
     }
 
     /**
-     * Get all last usersubmission
+     * Get the last submission of all users
      *
      * @param $fields fields
      *            to retrieve from submissions table, default s.*. userid is always retrieved
@@ -715,18 +813,33 @@ class mod_vpl {
         // Get last submissions records for this vpl module.
         global $DB;
         $id = $this->get_instance()->id;
-        $query = "SELECT s.userid, $fields FROM {vpl_submissions} AS s";
+        if ($this->is_group_activity()) {
+            $idfield = 'groupid';
+        } else {
+            $idfield = 'userid';
+        }
+        $query = "SELECT s.$idfield, $fields FROM {vpl_submissions} s";
         $query .= ' inner join ';
         $query .= ' (SELECT max(id) as maxid FROM {vpl_submissions} ';
         $query .= '  WHERE {vpl_submissions}.vpl=? ';
-        $query .= '  GROUP BY {vpl_submissions}.userid) as ls';
+        $query .= "  GROUP BY {vpl_submissions}.$idfield) as ls";
         $query .= ' on s.id = ls.maxid';
-        $parms = array (
-                $id
-        );
-        return $DB->get_records_sql( $query, $parms );
+        return $DB->get_records_sql( $query, array( $id ) );
     }
 
+    /**
+     * Get all saved submission of all users
+     *
+     * @param $fields fields
+     *            to retrieve from submissions table, default s.*
+     * @return object array
+     */
+    public function all_user_submission($fields = 's.*') {
+        global $DB;
+        $id = $this->get_instance()->id;
+        $query = "SELECT s.id, $fields FROM {vpl_submissions} s WHERE vpl=?";
+        return $DB->get_records_sql( $query, array ( $id ) );
+    }
     /**
      * Get number of user submissions
      *
@@ -734,13 +847,53 @@ class mod_vpl {
      */
     public function get_submissions_number() {
         global $DB;
-        $query = 'SELECT userid, COUNT(*) as submissions FROM {vpl_submissions}';
+        if ( $this->is_group_activity() ) {
+            $field = 'groupid';
+        } else {
+            $field = 'userid';
+        }
+        $query = "SELECT $field, COUNT(*) as submissions FROM {vpl_submissions}";
         $query .= ' WHERE {vpl_submissions}.vpl=?';
-        $query .= ' GROUP BY {vpl_submissions}.userid';
+        $query .= " GROUP BY {vpl_submissions}.$field";
         $parms = array (
                 $this->get_instance()->id
         );
         return $DB->get_records_sql( $query, $parms );
+    }
+
+    /**
+     * This is for compatibility to old group scheme
+     * Update the submission groupid for VPL version <= 3.2
+     *
+     * Set the correct groupid when groupid = 0
+     * @param $group integer
+     *     $groupid to set
+     *     if no $groupid => update $groupid of all groups of the activity
+     * @return void
+     */
+    public function update_group_v32($groupid='') {
+        global $DB;
+        if ( ! $this->is_group_activity() ) {
+            return;
+        }
+        // All groups.
+        if ($groupid == '') {
+            $cm = $this->get_course_module();
+            $groups = groups_get_all_groups($this->get_course()->id, 0, $cm->groupingid);
+            foreach ($groups as $cgroup) {
+                $this->update_group_v32($cgroup->id);
+            }
+        }
+        $students = $this->get_students($groupid);
+        if (count($students) > 0) {
+            $studentsids = array_keys($students);
+            $insql = $DB->get_in_or_equal($studentsids);
+            $vplid = $this->get_instance()->id;
+            $select = 'userid ' . ($insql[0]) . ' and vpl = ? and groupid = 0';
+            $params = $insql[1];
+            $params[] = $vplid;
+            $DB->set_field_select(VPL_SUBMISSIONS, 'groupid', $groupid, $select, $params);
+        }
     }
 
     /**
@@ -754,10 +907,24 @@ class mod_vpl {
     public function last_user_submission($userid) {
         global $DB;
         if ($this->is_group_activity()) {
-            $userid = $this->get_group_leaderid( $userid );
-            if ($userid == 0) {
-                return false;
+            $group = $this->get_usergroup($userid);
+            if ($group !== false) {
+                $select = "(groupid = ?) AND (vpl = ?)";
+                $params = array (
+                        $group->id,
+                        $this->instance->id
+                );
+                $res = $DB->get_records_select( 'vpl_submissions', $select, $params, 'id DESC', '*', 0, 1 );
+                foreach ($res as $sub) {
+                    return $sub;
+                }
+                $this->update_group_v32($group->id);
+                $res = $DB->get_records_select( 'vpl_submissions', $select, $params, 'id DESC', '*', 0, 1 );
+                foreach ($res as $sub) {
+                    return $sub;
+                }
             }
+            return false;
         }
         $select = "(userid = ?) AND (vpl = ?)";
         $params = array (
@@ -951,7 +1118,8 @@ class mod_vpl {
         if ($this->is_group_activity()) {
             return print_group_picture( $this->get_usergroup( $user->id ), $this->get_course()->id, false, true );
         } else {
-            return $OUTPUT->user_picture( $user );
+            $options = array('courseid' => $this->get_instance()->course, 'link' => ! $this->use_seb());
+            return $OUTPUT->user_picture( $user, $options);
         }
     }
 
@@ -961,7 +1129,7 @@ class mod_vpl {
      * @param
      *            user object
      * @param
-     *            withlink boolean. if true and is group add link to group
+     *            withlink boolean. if true and is group add link to group. Default true
      * @return String
      */
     public function fullname($user, $withlink = true) {
@@ -1004,34 +1172,34 @@ class mod_vpl {
     }
 
     /**
-     * Get array of students for this activity and group (optional) if is group activity return only group liders
+     * Get array of students for this activity if group is set return only group members
      *
      * @param $group optional
      *            parm with group to search for
      * @return array
      */
     public function get_students($group = '') {
-        if (! isset( $this->students )) {
-            // Generate array of graders indexed.
-            $nostudens = array ();
-            foreach ($this->get_graders() as $user) {
-                $nostudens [$user->id] = true;
+        if ( isset( $this->students ) && $group == '') {
+            return $this->students;
+        }
+        // Generate array of graders indexed.
+        $nostudents = array ();
+        foreach ($this->get_graders($group) as $user) {
+            $nostudents [$user->id] = true;
+        }
+        $students = array ();
+        $all = get_users_by_capability( $this->get_context(), VPL_SUBMIT_CAPABILITY, user_picture::fields( 'u' ),
+                'u.lastname ASC', '', '', $group );
+        // TODO the following code is too slow.
+        foreach ($all as $user) {
+            if (! isset( $nostudents [$user->id] )) {
+                $students [$user->id] = $user;
             }
-            $students = array ();
-            $all = get_users_by_capability( $this->get_context(), VPL_SUBMIT_CAPABILITY, user_picture::fields( 'u' ),
-                    'u.lastname ASC', '', '', $group );
-            // TODO the following code is too slow.
-            foreach ($all as $user) {
-                if (! isset( $nostudens [$user->id] )) {
-                    $students [] = $user;
-                }
-            }
-            if (memory_get_usage( true ) > 50000000) { // Don't cache if low memory.
-                return $students;
-            }
+        }
+        if ($group != '') { // Don't cache if group request.
             $this->students = $students;
         }
-        return $this->students;
+        return $students;
     }
 
     /**
@@ -1041,7 +1209,7 @@ class mod_vpl {
      */
     public function is_inconsistent_user($current, $real) {
         if ($this->is_group_Activity()) {
-            return $current != $this->get_group_leaderid( $real );
+            return false;
         } else {
             return $current != $real;
         }
@@ -1054,7 +1222,8 @@ class mod_vpl {
      */
     public function get_group_leaderid($userid) {
         $leaderid = 0;
-        foreach ($this->get_usergroup_members( $userid ) as $user) {
+        $group = $this->get_usergroup($userid);
+        foreach ($this->get_usergroup_members( $group->id ) as $user) {
             if ($user->id < $leaderid || $leaderid == 0) {
                 $leaderid = $user->id;
             }
@@ -1081,6 +1250,22 @@ class mod_vpl {
     }
     protected static $usergroupscache = array ();
     /**
+     * If is a group activity return group members for the groupid
+     *
+     * @return Array of user objects
+     */
+    public function get_group_members($groupid) {
+        if (! isset( self::$usergroupscache [$groupid] )) {
+            $gm = groups_get_members( $groupid );
+            if ($gm) {
+                self::$usergroupscache [$groupid] = $gm;
+            } else {
+                self::$usergroupscache [$groupid] = array();
+            }
+        }
+        return self::$usergroupscache [$groupid];
+    }
+    /**
      * If is a group activity return group members for the group of the userid
      *
      * @return Array of user objects
@@ -1088,10 +1273,7 @@ class mod_vpl {
     public function get_usergroup_members($userid) {
         $group = $this->get_usergroup( $userid );
         if ($group !== false) {
-            if (! isset( self::$usergroupscache [$group->id] )) {
-                self::$usergroupscache [$group->id] = groups_get_members( $group->id, 'u.id' );
-            }
-            return self::$usergroupscache [$group->id];
+            return $this->get_group_members($group->id);
         }
         return array ();
     }
@@ -1171,12 +1353,14 @@ class mod_vpl {
      */
     public function print_footer() {
         global $OUTPUT;
-        $style = "float:right; right:10px; padding:8px; background-color: white;text-align:center;";
-        echo '<div style="' . $style . '">';
-        echo '<a href="http://vpl.dis.ulpgc.es/">';
-        echo 'VPL '. vpl_get_version();
-        echo '</a>';
-        echo '</div>';
+        if (! $this->use_seb() ) {
+            $style = "float:right; right:10px; padding:8px; background-color: white;text-align:center;";
+            echo '<div style="' . $style . '">';
+            echo '<a href="http://vpl.dis.ulpgc.es/">';
+            echo 'VPL '. vpl_get_version();
+            echo '</a>';
+            echo '</div>';
+        }
         echo $OUTPUT->footer();
     }
 
@@ -1223,6 +1407,10 @@ class mod_vpl {
         $PAGE->set_title( $this->get_course()->fullname . ' ' . $tittle );
         $PAGE->set_pagelayout( 'incourse' );
         $PAGE->set_heading( $this->get_course()->fullname );
+        if ( $this->use_seb() && ! $this->has_capability(VPL_GRADE_CAPABILITY)) {
+            $PAGE->set_popup_notification_allowed(false);
+            $PAGE->set_pagelayout('secure');
+        }
         echo $OUTPUT->header();
         self::$headerisout = true;
     }
@@ -1237,6 +1425,10 @@ class mod_vpl {
         }
         $PAGE->set_title( $this->get_course()->fullname . ' ' . $tittle );
         $PAGE->set_pagelayout( 'popup' );
+        if ( $this->use_seb() && ! $this->has_capability(VPL_GRADE_CAPABILITY)) {
+            $PAGE->set_popup_notification_allowed(false);
+            $PAGE->set_pagelayout('secure');
+        }
         echo $OUTPUT->header();
         self::$headerisout = true;
     }
@@ -1259,9 +1451,72 @@ class mod_vpl {
      * @param $active tab
      *
      */
+    public function print_configure_tabs($path) {
+        global $CFG, $PAGE;
+        $active = basename($path);
+        $strbasic = get_string('basic', VPL);
+        $strfulldescription = get_string('fulldescription', VPL);
+        $strtestcases = get_string('testcases', VPL);
+        $strexecutionoptions = get_string('executionoptions', VPL);
+        $menustrexecutionoptions = get_string('menuexecutionoptions', VPL);
+        $strrequestedfiles = get_string('requestedfiles', VPL);
+        $stradvanced = get_string('advanced', VPL);
+        $strexecution = get_string('execution', VPL);
+        $tabs = array();
+        $tabs[] = new tabobject('edit', vpl_abs_href('/course/modedit.php', 'update', $this->cm->id), $strbasic, $strbasic);
+        $urltestcasesfile = vpl_mod_href('forms/testcasesfile.php', 'id', $this->cm->id, 'edit', 3);
+        $tabs[] = new tabobject('testcasesfile.php', $urltestcasesfile, $strtestcases, $strtestcases);
+        $urlexecutionoptions = vpl_mod_href('forms/executionoptions.php', 'id', $this->cm->id);
+        $tabs[] = new tabobject('executionoptions.php', $urlexecutionoptions, $menustrexecutionoptions, $strexecutionoptions);
+        $urlrequestedfiles = vpl_mod_href('forms/requestedfiles.php', 'id', $this->cm->id);
+        $tabs[] = new tabobject('requiredfiles.php', $urlrequestedfiles, $strrequestedfiles, $strrequestedfiles);
+        if ($active == 'executionfiles.php' || $active == 'executionlimits.php'
+            || $active == 'executionkeepfiles.php' || $active == 'variations.php'
+            || $active == 'local_jail_servers.php' || $active == 'checkjailservers.php') {
+                $urlexecutionfiles = VPL_mod_href('forms/executionfiles.php', 'id', $this->cm->id);
+                $tabs[] = new tabobject($active, $urlexecutionfiles, $stradvanced, $stradvanced);
+            $strexecutionlimits = get_string('maxresourcelimits', VPL);
+            $strexecutionfiles = get_string('executionfiles', VPL);
+            $menustrexecutionfiles = get_string('menuexecutionfiles', VPL);
+            $menustrexecutionlimits = get_string('menuresourcelimits', VPL);
+            $strvariations = get_string('variations', VPL);
+            $strexecutionkeepfiles = get_string('keepfiles', VPL);
+            $strexecutionlimits = get_string('maxresourcelimits', VPL);
+            $strcheckjails = get_string('check_jail_servers', VPL);
+            $strsetjails = get_string('local_jail_servers', VPL);
+            $menustrexecutionkeepfiles = get_string('menukeepfiles', VPL);
+            $menustrcheckjails = get_string('menucheck_jail_servers', VPL);
+            $menustrsetjails = get_string('menulocal_jail_servers', VPL);
+            $subtabs = array();
+            $urlexecutionfiles = VPL_mod_href('forms/executionfiles.php', 'id', $this->cm->id);
+            $subtabs[] = new tabobject('executionfiles.php', $urlexecutionfiles, $menustrexecutionfiles, $strexecutionfiles);
+            $urlexecutionlimits = VPL_mod_href('forms/executionlimits.php', 'id', $this->cm->id);
+            $subtabs[] = new tabobject('executionlimits.php', $urlexecutionlimits, $menustrexecutionlimits, $strexecutionlimits);
+            $urlexecutionkeepfiles = VPL_mod_href('forms/executionkeepfiles.php', 'id', $this->cm->id);
+            $subtabs[] = new tabobject('executionkeepfiles.php', $urlexecutionkeepfiles,
+                                       $menustrexecutionkeepfiles, $strexecutionkeepfiles);
+            $urlvariations = VPL_mod_href('forms/variations.php', 'id', $this->cm->id);
+            $subtabs[] = new tabobject('variations.php', $urlvariations, $strvariations, $strvariations);
+            $urlcheckjailservers = VPL_mod_href('views/checkjailservers.php', 'id', $this->cm->id);
+            $subtabs[] = new tabobject('checkjailservers.php', $urlcheckjailservers, $menustrcheckjails, $strcheckjails);
+            if ($this->has_capability(VPL_SETJAILS_CAPABILITY)) {
+                $urllocaljailservers = VPL_mod_href('forms/local_jail_servers.php', 'id', $this->cm->id);
+                $subtabs[] = new tabobject('local_jail_servers.php', $urllocaljailservers, $menustrsetjails, $strsetjails);
+            }
+        } else {
+            $tabs[] = new tabobject('executionfiles.php', $urlexecutionfiles, $stradvanced, $stradvanced);
+        }
+    }
+
+    /**
+     * Create tabs to view_description/submit/view_submission/edit
+     *
+     * @param $active tab
+     *
+     */
     public function print_view_tabs($active) {
         // TODO refactor using functions.
-        global $CFG, $USER, $DB;
+        global $CFG, $USER, $DB, $OUTPUT;
         $active = basename( $active );
         $cmid = $this->cm->id;
         $userid = optional_param( 'userid', null, PARAM_INT );
@@ -1333,6 +1588,7 @@ class mod_vpl {
         switch ($active) {
             case 'view.php' :
                 if ($level2) {
+                    // TODO replace by $OUTPUT->tabtree.
                     print_tabs(
                             array (
                                     $maintabs,
@@ -1434,9 +1690,6 @@ class mod_vpl {
                         $string = get_string( 'listwatermarks', VPL );
                         $tabs [] = new tabobject( 'listwatermark.php', $href, $string, $string );
                     }
-                    $href = vpl_mod_href( 'views/downloadallsubmissions.php', 'id', $cmid );
-                    $string = get_string( 'downloadallsubmissions', VPL );
-                    $tabs [] = new tabobject( 'downloadallsubmissions.php', $href, $string, $string );
                 }
                 print_tabs( array (
                         $maintabs,
@@ -1455,19 +1708,35 @@ class mod_vpl {
         echo '</h2>';
     }
 
-    public function print_restriction($str, $value = null, $raw = false, $newline = true) {
-        echo '<b>';
+    public function str_restriction($str, $value = null, $raw = false) {
+        $html = '<b>';
         if ($raw) {
-            echo s( $str );
+            $html .= s( $str );
         } else {
-            echo s( get_string( $str, VPL ) );
+            $html .= s( get_string( $str, VPL ) );
         }
-        echo '</b>: ';
+        $html .= '</b>: ';
         if ($value === null) {
             $value = $this->instance->$str;
         }
-        echo $value;
-        echo $newline ? '<br />' : ' ';
+        $html .= $value;
+        return $html;
+    }
+
+    /**
+     * Print one VPL setting
+     * @param string $str setting string i18n to get descriptoin
+     * @param string $value setting value, default null
+     * @param boolean $raw if true $str if raw string, default false
+     * @param boolean $newline if true print new line after setting, default false
+     */
+    public function print_restriction($str, $value = null, $raw = false, $newline = true) {
+        echo $this->str_restriction($str, $value, $raw);
+        if ( $newline ) {
+            echo '<br>';
+        } else {
+            echo '. ';
+        }
     }
 
     /**
@@ -1490,7 +1759,6 @@ class mod_vpl {
      */
     public function print_submission_restriction() {
         global $CFG, $USER;
-        // TODO print_submission_restriction.
         $filegroup = $this->get_required_fgm();
         $files = $filegroup->getfilelist();
         if (count( $files )) {
@@ -1510,14 +1778,15 @@ class mod_vpl {
             $link .= '</a>)';
             $this->print_restriction( 'requestedfiles', $text . $link );
         }
-        if (count( $files ) != $this->instance->maxfiles) {
+        $instance = $this->get_instance();
+        if (count( $files ) != $instance->maxfiles) {
             $this->print_restriction( 'maxfiles' );
         }
-        if ($this->instance->maxfilesize) {
+        if ($instance->maxfilesize) {
             $mfs = $this->get_maxfilesize();
             $this->print_restriction( 'maxfilesize', vpl_conv_size_to_string( $mfs ) );
         }
-        $worktype = $this->instance->worktype;
+        $worktype = $instance->worktype;
         $values = array (
                 0 => get_string( 'individualwork', VPL ),
                 1 => get_string( 'groupwork', VPL )
@@ -1527,10 +1796,11 @@ class mod_vpl {
         } else {
             $this->print_restriction( 'worktype', $values [$worktype] );
         }
-        if ($this->instance->example) {
+        if ($instance->example) {
             $this->print_restriction( 'isexample', $stryes );
         }
-        if ($this->has_capability( VPL_GRADE_CAPABILITY )) {
+        $grader = $this->has_capability( VPL_GRADE_CAPABILITY );
+        if ($grader) {
             $stryes = get_string( 'yes' );
             $strno = get_string( 'no' );
             require_once($CFG->libdir . '/gradelib.php');
@@ -1549,54 +1819,73 @@ class mod_vpl {
             } else {
                 $this->print_restriction( get_string( 'gradessettings', 'core_grades' ), get_string( 'nograde' ), true );
             }
-            if (trim( $this->instance->password ) > '') {
+        }
+        $this->print_gradereduction();
+        if ($grader) {
+            if (trim( $instance->password ) > '') {
                 $this->print_restriction( get_string( 'password' ), $stryes, true );
             }
-            if (trim( $this->instance->requirednet ) > '') {
-                $this->print_restriction( 'requirednet', s( $this->instance->requirednet ) );
+            if (trim( $instance->requirednet ) > '') {
+                $this->print_restriction( 'requirednet', s( $instance->requirednet ));
             }
-            if ($this->instance->restrictededitor) {
+            if ( $instance->sebrequired > 0) {
+                $this->print_restriction('sebrequired', $stryes );
+            }
+            if (trim( $instance->sebkeys ) > '') {
+                $this->print_restriction('sebkeys', $stryes );
+            }
+            if ($instance->restrictededitor) {
                 $this->print_restriction( 'restrictededitor', $stryes );
             }
             if (! $this->get_course_module()->visible) {
                 $this->print_restriction( get_string( 'visible' ), $strno, true );
             }
-            if ($this->instance->basedon) {
-                $basedon = new mod_vpl( null, $this->instance->basedon );
-                $link = '<a href="';
-                $link .= vpl_mod_href( 'view.php', 'id', $basedon->cm->id );
-                $link .= '">';
-                $link .= $basedon->get_printable_name();
-                $link .= '</a>';
-                $this->print_restriction( 'basedon', $link );
+            if ($instance->basedon) {
+                try {
+                    $basedon = new mod_vpl( null, $instance->basedon );
+                    $link = '<a href="';
+                    $link .= vpl_mod_href( 'view.php', 'id', $basedon->cm->id );
+                    $link .= '">';
+                    $link .= $basedon->get_printable_name();
+                    $link .= '</a>';
+                    $this->print_restriction( 'basedon', $link );
+                } catch (Exception $e) {
+                    $this->print_restriction( 'basedon', $e->getMessage() );
+                }
             }
             $noyes = array (
                     $strno,
                     $stryes
             );
-            $this->print_restriction( 'run', $noyes [$this->instance->run], false, false );
-            if ($this->instance->debug) {
+            $this->print_restriction( 'run', $noyes [$instance->run], false, false );
+            if ($instance->runscript) {
+                $this->print_restriction( 'runscript', strtoupper($instance->runscript), false, false );
+            }
+            if ($instance->debug) {
                 $this->print_restriction( 'debug', $noyes [1], false, false );
             }
-            $this->print_restriction( 'evaluate', $noyes [$this->instance->evaluate], false,
-                    ! ($this->instance->evaluate && $this->instance->evaluateonsubmission) );
-            if ($this->instance->evaluate && $this->instance->evaluateonsubmission) {
+            if ($instance->debugscript) {
+                $this->print_restriction( 'debugscript', strtoupper($instance->debugscript), false, false );
+            }
+            $this->print_restriction( 'evaluate', $noyes [$instance->evaluate], false,
+                    ! ($instance->evaluate && $instance->evaluateonsubmission) );
+            if ($instance->evaluate && $instance->evaluateonsubmission) {
                 $this->print_restriction( 'evaluateonsubmission', $noyes [1] );
             }
-            if ($this->instance->automaticgrading) {
+            if ($instance->automaticgrading) {
                 $this->print_restriction( 'automaticgrading', $noyes [1], false, false );
             }
-            if ($this->instance->maxexetime) {
-                $this->print_restriction( 'maxexetime', $this->instance->maxexetime . ' s', false, false );
+            if ($instance->maxexetime) {
+                $this->print_restriction( 'maxexetime', $instance->maxexetime . ' s', false, false );
             }
-            if ($this->instance->maxexememory) {
-                $this->print_restriction( 'maxexememory', vpl_conv_size_to_string( $this->instance->maxexememory ), false, false );
+            if ($instance->maxexememory) {
+                $this->print_restriction( 'maxexememory', vpl_conv_size_to_string( $instance->maxexememory ), false, false );
             }
-            if ($this->instance->maxexefilesize) {
-                $this->print_restriction( 'maxexefilesize', vpl_conv_size_to_string( $this->instance->maxexefilesize ), false,
+            if ($instance->maxexefilesize) {
+                $this->print_restriction( 'maxexefilesize', vpl_conv_size_to_string( $instance->maxexefilesize ), false,
                         false );
             }
-            if ($this->instance->maxexeprocesses) {
+            if ($instance->maxexeprocesses) {
                 $this->print_restriction( 'maxexeprocesses', null, false, false );
             }
         }
@@ -1611,6 +1900,22 @@ class mod_vpl {
             echo $OUTPUT->box_start();
             echo format_text( $this->instance->shortdescription, FORMAT_PLAIN );
             echo $OUTPUT->box_end();
+        }
+    }
+
+    /**
+     * Show short description
+     */
+    public function print_gradereduction($return = false) {
+        if ($this->instance->reductionbyevaluation > 0) {
+            $html = $this->str_restriction( 'reductionbyevaluation', $this->instance->reductionbyevaluation);
+            if ( $this->instance->freeevaluations > 0) {
+                $html .= ' ' . $this->str_restriction( 'freeevaluations', $this->instance->freeevaluations);
+            }
+            if ( $return ) {
+                return $html;
+            }
+            echo $html . '<br>';
         }
     }
 

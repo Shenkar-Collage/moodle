@@ -23,13 +23,14 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+defined( 'MOODLE_INTERNAL' ) || die();
 class vpl_editor_util {
     public static function generate_jquery() {
         global $PAGE;
         $PAGE->requires->css( new moodle_url( '/mod/vpl/editor/font-awesome/css/font-awesome.min.css' ) );
         $PAGE->requires->css( new moodle_url( '/mod/vpl/editor/jquery/themes/smoothness/jquery-ui.css' ) );
         $PAGE->requires->js( new moodle_url( '/mod/vpl/editor/jquery/jquery-1.9.1.js' ), true );
-        $PAGE->requires->js( new moodle_url( '/mod/vpl/editor/jquery/jquery-ui-1.10.3.js' ), true );
+        $PAGE->requires->js( new moodle_url( '/mod/vpl/editor/jquery/jquery-ui-1.10.4.js' ), true );
         $PAGE->requires->js( new moodle_url( '/mod/vpl/editor/VPL_jquery_no_conflict.js' ), true );
     }
     public static function generate_requires_evaluation() {
@@ -56,8 +57,15 @@ class vpl_editor_util {
         $PAGE->requires->js( new moodle_url( '/mod/vpl/editor/noVNC/include/util.js' ), true );
     }
     public static function print_tag($options) {
+        $plugincfg = get_config('mod_vpl');
         $tagid = 'vplide';
         $options ['i18n'] = self::i18n();
+        if ( isset($plugincfg->editor_theme) ) {
+            $options ['theme'] = $plugincfg->editor_theme;
+        } else {
+            $options ['theme'] = 'chrome';
+        }
+        $options ['fontSize'] = get_user_preferences('vpl_editor_fontsize', 12);
         $joptions = json_encode( $options );
 ?>
 <div id="<?php echo $tagid;?>" class="vpl_ide vpl_ide_root ui-widget">
@@ -110,6 +118,15 @@ class vpl_editor_util {
         style="display: none;">
         <ol id="vpl_sort_list"></ol>
     </div>
+    <div id="vpl_ide_dialog_multidelete" class="vpl_ide_dialog"
+        style="display: none;">
+        <fieldset id="vpl_multidelete_list"></fieldset>
+    </div>
+    <div id="vpl_ide_dialog_fontsize" class="vpl_ide_dialog"
+        style="display: none;">
+        <div class="vpl_fontsize_slider_value"></div>
+        <div class="vpl_fontsize_slider"></div>
+    </div>
     <div id="vpl_ide_dialog_comments" class="vpl_ide_dialog"
         style="display: none;">
         <fieldset>
@@ -146,7 +163,7 @@ class vpl_editor_util {
                 href="../editor/jquery/MIT-LICENSE.txt">licence</a>)</li>
             <li><a href="http://fontawesome.io">Font Awesome</a> by Dave Gandy</li>
             <li>unzip.js August Lilleaas</li>
-            <li>inflate.js August Lilleaas and Masanao Izumo <iz@onicos.co.jp></li>
+            <li>inflate.js August Lilleaas and Masanao Izumo &lt;iz@onicos.co.jp&gt;</li>
         </ul>
         </div>
     </div>
@@ -213,6 +230,7 @@ class vpl_editor_util {
                 'copy',
                 'create_new_file',
                 'cut',
+                'description',
                 'debug',
                 'debugging',
                 'delete',
@@ -258,7 +276,8 @@ class vpl_editor_util {
                 'sureresetfiles',
                 'timeleft',
                 'timeout',
-                'undo'
+                'undo',
+                'multidelete'
         );
         $words = array (
                 'cancel',
@@ -270,7 +289,11 @@ class vpl_editor_util {
                 'ok',
                 'required',
                 'sort',
-                'warning'
+                'warning',
+                'deleteselected',
+                'selectall',
+                'deselectall',
+                'reset'
         );
         $list = Array ();
         foreach ($vplwords as $word) {
@@ -280,6 +303,9 @@ class vpl_editor_util {
             $list [$word] = get_string( $word );
         }
         $list ['close'] = get_string( 'closebuttontitle' );
+        $list ['more'] = get_string( 'showmore', 'form' );
+        $list ['less'] = get_string( 'showless', 'form' );
+        $list ['fontsize'] = get_string( 'fontsize', 'editor' );
         return $list;
     }
     public static function generate_evaluate_script($ajaxurl, $nexturl) {

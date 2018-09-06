@@ -44,8 +44,7 @@ if ((! $userid || $userid == $USER->id) && $vpl->get_instance()->evaluate) { // 
     $vpl->require_capability( VPL_GRADE_CAPABILITY );
 }
 if ($USER->id == $userid) {
-    $vpl->network_check();
-    $vpl->password_check();
+    $vpl->restrictions_check();
 }
 // Display page.
 $vpl->print_header( get_string( 'evaluation', VPL ) );
@@ -53,9 +52,9 @@ flush();
 $course = $vpl->get_course();
 $instance = $vpl->get_instance();
 echo '<h2>' . s( get_string( 'evaluating', VPL ) ) . '</h2>';
-$userinfo = $DB->get_record( 'user', array ( 'id' => $userid ) );
-$text = ' ' . $vpl->user_picture( $userinfo );
-$text .= ' ' . fullname( $userinfo );
+$user = $DB->get_record( 'user', array ( 'id' => $userid ) );
+$text = ' ' . $vpl->user_picture( $user );
+$text .= ' ' . fullname( $user );
 echo $OUTPUT->box( $text );
 $ajaxurl = "edit.json.php?id={$id}&userid={$userid}&action=";
 if (optional_param( 'grading', 0, PARAM_INT )) {

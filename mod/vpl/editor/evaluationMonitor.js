@@ -20,49 +20,40 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
-(function() {
 
-    var VPL_Evaluation = function(options) {
+/* globals VPL_Single_Evaluation: true */
+/* globals VPL_Util */
+
+(function() {
+    VPL_Single_Evaluation = function(options) {
+        VPL_Util.set_str(options.i18n);
+        options.next = function() {
+            window.location = options.nexturl;
+        };
         function showErrorMessage(message) {
             VPL_Util.showErrorMessage(message, {
                 next : options.next
             });
         }
+        var action;
         var executionActions = {
             'ajaxurl' : options.ajaxurl,
             'run' : showErrorMessage,
             'getLastAction' : function() {
-                return null;
+                action();
             },
-            'close' : options.next,
-            'next' : options.next,
         };
-        VPL_Util.requestAction('evaluate', 'evaluating', {}, options.ajaxurl, function(response) {
-            VPL_Util.webSocketMonitor(response, 'evaluate', 'evaluating', executionActions);
-        }, showErrorMessage);
-    };
-    VPL_Single_Evaluation = function(options) {
-        VPL_Util.set_str(options.i18n);
-        options.next = function() {
-            setTimeout(function() {
-                window.location = options.nexturl;
-            }, 50);
-        };
-        VPL_Evaluation(options);
-    };
-    VPL_Batch_Evaluation = function(options) {
-        VPL_Util.set_str(options.i18n);
-        if (typeof options.student === 'undefined') {
-            options.student = 0;
-            options.next = function() {
-                setTimeout(function() {
-                    if (options.student < options.ajaxurls.length) {
-                        VPL_BatchEvaluation(options);
+        action = function() {
+            VPL_Util.requestAction('evaluate', 'evaluating', {}, options.ajaxurl)
+            .done(
+                    function(response) {
+                        VPL_Util.webSocketMonitor(response, 'evaluate', 'evaluating', executionActions)
+                        .done(options.next)
+                        .fail(showErrorMessage);
                     }
-                }, 50);
-            };
-        }
-        options.ajaxurl = options.ajaxurls[options.student++];
-        VPL_BatchIteration(options);
+            )
+            .fail(showErrorMessage);
+        };
+        action();
     };
 })();

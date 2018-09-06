@@ -24,6 +24,7 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+defined( 'MOODLE_INTERNAL' ) || die();
 require_once(dirname(__FILE__).'/../locallib.php');
 require_once(dirname(__FILE__).'/../vpl.class.php');
 require_once(dirname(__FILE__).'/../vpl_submission_CE.class.php');
@@ -96,6 +97,12 @@ class mod_vpl_edit{
             $compilationexecution = $submission->get_CE_for_editor();
         } else {
             $files = self::get_requested_files( $vpl );
+            $compilationexecution = new stdClass();
+            $compilationexecution->nevaluations = 0;
+            $vplinstance = $vpl->get_instance();
+            $compilationexecution->freeevaluations = $vplinstance->freeevaluations;
+            $compilationexecution->reductionbyevaluation = $vplinstance->reductionbyevaluation;
+
         }
         return $files;
     }
@@ -116,15 +123,22 @@ class mod_vpl_edit{
         } else {
             $subreg = $vpl->last_user_submission( $userid );
         }
+        $response->files = self::get_requested_files( $vpl );
         if ($subreg) {
             $submission = new mod_vpl_submission( $vpl, $subreg );
             $fgp = $submission->get_submitted_fgm();
-            $response->id .= $subreg->id;
-            $response->comments .= $subreg->comments;
-            $response->files = $fgp->getallfiles();
+            $response->id = $subreg->id;
+            $response->comments = $subreg->comments;
+            $response->files = array_merge($response->files, $fgp->getallfiles());
             $response->compilationexecution = $submission->get_CE_for_editor();
         } else {
-            $response->files = self::get_requested_files( $vpl );
+            $compilationexecution = new stdClass();
+            $compilationexecution->grade = '';
+            $compilationexecution->nevaluations = 0;
+            $vplinstance = $vpl->get_instance();
+            $compilationexecution->freeevaluations = $vplinstance->freeevaluations;
+            $compilationexecution->reductionbyevaluation = $vplinstance->reductionbyevaluation;
+            $response->compilationexecution = $compilationexecution;
         }
         return $response;
     }

@@ -24,12 +24,13 @@
  */
 
 define( 'AJAX_SCRIPT', true );
+
+require(__DIR__ . '/../../../config.php');
 $outcome = new stdClass();
 $outcome->success = true;
 $outcome->response = new stdClass();
 $outcome->error = '';
 try {
-    require_once(dirname( __FILE__ ) . '/../../../config.php');
     require_once(dirname( __FILE__ ) . '/edit.class.php');
     if (! isloggedin()) {
         throw new Exception( get_string( 'loggedinnot' ) );
@@ -38,11 +39,12 @@ try {
     $id = required_param( 'id', PARAM_INT ); // Course id.
     $action = required_param( 'action', PARAM_ALPHANUMEXT );
     $userid = optional_param( 'userid', false, PARAM_INT );
+    $subid = optional_param( 'subid', false, PARAM_INT );
     $vpl = new mod_vpl( $id );
     // TODO use or not sesskey."require_sesskey();".
     require_login( $vpl->get_course(), false );
 
-    $PAGE->set_url( new moodle_url( '/mod/vpl/forms/editor.json.php', array (
+    $PAGE->set_url( new moodle_url( '/mod/vpl/forms/edit.json.php', array (
             'id' => $id,
             'action' => $action
     ) ) );
@@ -56,15 +58,10 @@ try {
     if (! $vpl->is_submit_able()) {
         throw new Exception( get_string( 'notavailable' ) );
     }
-    if (! $userid || $userid == $USER->id) { // Make own submission.
+    if (! $userid || $userid == $USER->id) { // Make load own submission.
         $userid = $USER->id;
         $vpl->require_capability( VPL_SUBMIT_CAPABILITY );
-        if (! $vpl->pass_network_check()) {
-            throw new Exception( get_string( 'opnotallowfromclient', VPL ) . ' ' . getremoteaddr() );
-        }
-        if (! $vpl->pass_password_check()) {
-            throw new Exception( get_string( 'requiredpassword', VPL ) );
-        }
+        $vpl->restrictions_check();
     } else { // Make other user submission.
         $vpl->require_capability( VPL_MANAGE_CAPABILITY );
     }
@@ -82,10 +79,8 @@ try {
             $outcome->response->files = mod_vpl_edit::filestoide( $files );
             break;
         case 'load' :
-            if ( isset($actiondata->submissionid) &&
-                $actiondata->submissionid > 0 &&
-                $vpl->has_capability( VPL_MANAGE_CAPABILITY ) ) {
-                $load = mod_vpl_edit::load( $vpl, $userid , $actiondata->submissionid);
+            if ( $subid && $vpl->has_capability( VPL_MANAGE_CAPABILITY ) ) {
+                $load = mod_vpl_edit::load( $vpl, $userid , $subid);
             } else {
                 $load = mod_vpl_edit::load( $vpl, $userid );
             }
@@ -113,7 +108,7 @@ try {
             throw new Exception( 'ajax action error: ' + $action );
     }
     $timeleft = $instance->duedate - time();
-    $hour = 60*60;
+    $hour = 60 * 60;
     if ( $instance->duedate > 0 && $timeleft > -$hour ) {
         $outcome->response->timeLeft = $timeleft;
     }

@@ -22,7 +22,6 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
-global $CFG;
 require_once(dirname(__FILE__).'/../../../config.php');
 require_once(dirname(__FILE__).'/../locallib.php');
 require_once(dirname(__FILE__).'/../vpl.class.php');
@@ -45,10 +44,10 @@ if ($copy) {
 }
 $vpl->prepare_page( 'forms/edit.php', $pageparms );
 if (! $vpl->is_visible()) {
-    notice( get_string( 'notavailable' ) );
+    vpl_redirect('?id=' . $id, get_string( 'notavailable' ), 'error' );
 }
 if (! $vpl->is_submit_able()) {
-    print_error( 'notavailable' );
+    vpl_redirect('?id=' . $id, get_string( 'notavailable' ), 'error' );
 }
 if (! $userid || $userid == $USER->id) { // Edit own submission.
     $userid = $USER->id;
@@ -56,8 +55,7 @@ if (! $userid || $userid == $USER->id) { // Edit own submission.
 } else { // Edit other user submission.
     $vpl->require_capability( VPL_MANAGE_CAPABILITY );
 }
-$vpl->network_check();
-$vpl->password_check();
+$vpl->restrictions_check();
 
 $instance = $vpl->get_instance();
 $manager = $vpl->has_capability(VPL_MANAGE_CAPABILITY);
@@ -88,11 +86,24 @@ $options ['debug'] = ($instance->debug || $manager);
 $options ['evaluate'] = ($instance->evaluate || $manager);
 $options ['example'] = true && $instance->example;
 $options ['comments'] = ! $options ['example'];
+$options ['description'] = $vpl->get_fulldescription_with_basedon();
+$options ['username'] = $vpl->fullname($DB->get_record( 'user', array ( 'id' => $userid ) ), false);
 $linkuserid = $copy ? $USER->id : $userid;
-$options ['ajaxurl'] = "edit.json.php?id={$id}&userid={$linkuserid}&action=";
+$ajaxurl = "edit.json.php?id={$id}&userid={$linkuserid}";
+if ( $subid && $lastsub ) {
+    $ajaxurl .= "&subid={$lastsub->id}";
+}
+$options ['ajaxurl'] = $ajaxurl . '&action=';
+if ( $copy ) {
+    $loadajaxurl = "edit.json.php?id={$id}&userid={$userid}";
+    if ( $subid && $lastsub ) {
+        $loadajaxurl .= "&subid={$lastsub->id}";
+    }
+    $options ['loadajaxurl'] = $loadajaxurl . '&action=';
+}
 $options ['download'] = "../views/downloadsubmission.php?id={$id}&userid={$linkuserid}";
 $timeleft = $instance->duedate - time();
-$hour = 60*60;
+$hour = 60 * 60;
 if ( $instance->duedate > 0 && $timeleft > -$hour ) {
     $options ['timeLeft'] = $timeleft;
 }

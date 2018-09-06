@@ -81,12 +81,16 @@ foreach ($ovpls as $ovpl) {
         continue;
     }
     $instance = $vpl->get_instance();
-    // Example NO.
+    // Example => NO.
     if ($instance->example) {
         continue;
     }
-    // Open and limited NO.
+    // Open and limited => NO.
     if ($timenow >= $instance->startdate && $timenow <= $instance->duedate) {
+        continue;
+    }
+    // Can be graded => NO.
+    if ($vpl->get_grade() == 0) {
         continue;
     }
     $vpls [] = $vpl;
@@ -186,7 +190,7 @@ foreach ($bars as $bar) {
 if (count( $table->data )) {
     echo html_writer::table( $table );
 } else {
-    echo $OUTPUT->box( get_string( 'noresults' ) );
+    vpl_notice( get_string( 'noresults' ) );
 }
 if (count( $relatedusers ) > 0) {
     arsort( $relatedusers );

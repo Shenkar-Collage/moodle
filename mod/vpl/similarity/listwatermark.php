@@ -81,8 +81,8 @@ foreach ($list as $userinfo) {
         $subf = $submission->get_submitted_fgm();
         $filelist = $subf->getFileList();
         foreach ($filelist as $filename) {
-            $data = $subf->getFileData( $filename );
-            $wm = vpl_watermark::getwm( $data );
+            $userdata = $subf->getFileData( $filename );
+            $wm = vpl_watermark::getwm( $userdata );
             if ($wm) {
                 if ($wm != $userinfo->id) {
                     $userorigin = $DB->get_record( 'user', array (
@@ -113,6 +113,7 @@ foreach ($list as $userinfo) {
 }
 if ($usernumber > 0) {
     echo html_writer::table( $table );
+} else {
+    vpl_notice( get_string( 'nowatermark', VPL, $nwm ) );
 }
-echo $OUTPUT->box( get_string( 'nowatermark', VPL, $nwm ) );
 $vpl->print_footer();

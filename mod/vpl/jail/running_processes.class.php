@@ -22,6 +22,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
+defined('MOODLE_INTERNAL') || die();
 
 /**
  * Only ONE task per user
@@ -47,10 +48,25 @@ class vpl_running_processes {
         vpl_truncate_running_processes( $info );
         return $DB->insert_record( self::TABLE, $info );
     }
-    static public function delete($userid) {
+    static public function delete($userid, $adminticket=false) {
         global $DB;
-        $DB->delete_records( self::TABLE, array (
-                'userid' => $userid
-        ) );
+        $parms = array('userid' => $userid);
+        if ($adminticket) {
+            $parms['adminticket'] = $adminticket;
+        }
+        $DB->delete_records( self::TABLE, $parms );
+    }
+    static public function lanched_processes($courseid) {
+        global $DB;
+        // Clean old processes.
+        // TODO: save the maximum time and delete based on it
+        $old = time() - (60 * 60); // One hour.
+        $DB->delete_records_select(self::TABLE, "start_time < ?", array($old));
+
+        $sql = 'SELECT {vpl_running_processes}.* FROM {vpl_running_processes}';
+        $sql .= ' INNER JOIN {vpl} ON {vpl_running_processes}.vpl = {vpl}.id';
+        $sql .= ' WHERE {vpl}.course = ?;';
+        $param = array ( $courseid );
+        return $DB->get_records_sql( $sql, $param );
     }
 }

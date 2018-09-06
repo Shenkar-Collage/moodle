@@ -23,6 +23,7 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+defined('MOODLE_INTERNAL') || die();
 require_once(dirname ( __FILE__ ) . '/sh_base.class.php');
 
 class vpl_sh_image extends vpl_sh_base {
@@ -41,6 +42,7 @@ class vpl_sh_image extends vpl_sh_base {
         return $this->mime [$ext];
     }
     public function print_file($name, $data) {
+        echo "<h4>" . s( $name ) . '</h4>';
         echo '<div class="vpl_sh vpl_g">';
         echo '<img src="data:image/' . $this->get_mime( $name ) . ';base64,';
         echo base64_encode( $data );

@@ -42,14 +42,15 @@ if (! $course = $DB->get_record( "course", array ( 'id' => $id ) )) {
 require_course_login( $course );
 // Load strings.
 $burl = vpl_rel_url( basename( __FILE__ ), 'id', $id );
-$strname = get_string( 'name' ) . ' ' . vpl_list_util::vpl_list_arrow( $burl, 'name', $instanceselection, $sort, $sortdir );
+$strname = get_string( 'name' ) . ' ';
+$strname .= vpl_list_util::vpl_list_arrow( $burl, 'name', $instanceselection, $sort, $sortdir );
 $strvpls = get_string( 'modulenameplural', VPL );
-$strshortdescription = get_string( 'shortdescription', VPL ) . ' '
-                     . vpl_list_util::vpl_list_arrow( $burl, 'shortdescription', $instanceselection, $sort, $sortdir );
-$strstartdate = get_string( 'startdate', VPL ) . ' '
-              . vpl_list_util::vpl_list_arrow( $burl, 'startdate', $instanceselection, $sort, $sortdir );
-$strduedate = get_string( 'duedate', VPL ) . ' '
-            . vpl_list_util::vpl_list_arrow( $burl, 'duedate', $instanceselection, $sort, $sortdir );
+$strshortdescription = get_string( 'shortdescription', VPL ) . ' ';
+$strshortdescription .= vpl_list_util::vpl_list_arrow( $burl, 'shortdescription', $instanceselection, $sort, $sortdir );
+$strstartdate = get_string( 'startdate', VPL ) . ' ';
+$strstartdate .= vpl_list_util::vpl_list_arrow( $burl, 'startdate', $instanceselection, $sort, $sortdir );
+$strduedate = get_string( 'duedate', VPL ) . ' ';
+$strduedate .= vpl_list_util::vpl_list_arrow( $burl, 'duedate', $instanceselection, $sort, $sortdir );
 $strnopls = get_string( 'novpls', VPL );
 
 $PAGE->set_url( '/mod/vpl/index.php', array ( 'id' => $id ) );
@@ -93,7 +94,8 @@ foreach (array (
 echo $OUTPUT->url_select( $urls, $urlindex [$instanceselection], array () );
 
 if (! $cms = get_coursemodules_in_course( VPL, $course->id, "m.shortdescription, m.startdate, m.duedate" )) {
-    notice( $strnopls, vpl_abs_href( '/course/view.php', 'id', $course->id ) );
+    vpl_redirect( vpl_abs_href( '/course/view.php', 'id', $course->id ),
+                  $strnopls);
     die();
 }
 $ovpls = get_all_instances_in_course( VPL, $course );
@@ -270,14 +272,14 @@ foreach ($vpls as $vpl) {
             if ($subinstance) { // Submitted.
                 $submission = new mod_vpl_submission( $vpl, $subinstance );
                 if ($subinstance->dategraded > 0 && $vpl->get_visiblegrade()) {
-                    $text = $submission->print_grade_core();
+                    $text = $submission->get_grade_core();
                 } else {
                     $result = $submission->getCE();
                     $text = '';
                     if ($result ['executed'] !== 0) {
                         $prograde = $submission->proposedGrade( $result ['execution'] );
                         if ($prograde > '') {
-                            $text = get_string( 'proposedgrade', VPL, $submission->print_grade_core( $prograde ) );
+                            $text = get_string( 'proposedgrade', VPL, $submission->get_grade_core( $prograde ) );
                         }
                     } else {
                         $text = get_string( 'nograde' );
@@ -312,5 +314,8 @@ if ($totalsubs > 0) {
 }
 echo "<br />";
 echo html_writer::table( $table );
+$url = new moodle_url( '/mod/vpl/views/checkvpls.php', array ('id' => $id) );
+$string = get_string( 'checkall' );
+echo html_writer::link($url, $string, array('class' => 'btn btn-secondary'));
 
 echo $OUTPUT->footer();

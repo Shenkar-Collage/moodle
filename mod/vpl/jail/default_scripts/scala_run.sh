@@ -6,7 +6,9 @@
 #          Lückl Bernd: bernd.lueckl.ima10@fh-joanneum.at
 #          Lang Johannes: johannes.lang.ima10@fh-joanneum.at
 #          Peter Salhofer 2015
-#load common script and check programs
+
+# @vpl_script_description Using default scalac
+# load common script and check programs
 . common_script.sh
 check_program scala
 check_program scalac
@@ -23,7 +25,7 @@ if [ "$?" -ne "0" ] ; then
  	exit 0
 fi
 cat common_script.sh > vpl_execution
-echo "scala -nocompdaemon $APP" >> vpl_execution
+echo "scala -nocompdaemon $APP \$@" >> vpl_execution
 chmod +x vpl_execution
 grep -E "scala\.swing\.| swing\.|javax.swing" $VPL_SUBFILE0 &> /dev/null
 if [ "$?" -eq "0" ]	; then

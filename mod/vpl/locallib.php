@@ -120,42 +120,41 @@ function vpl_delete_dir($dirname) {
 }
 
 /**
- * get parsed lines of a file
+ * Outputs a zip file and removes it. Must be called before any other output
  *
- * @param $filename string
- * @return array of lines of the file
+ * @param $zipfilename name of the file with the data
+ * @param $name of file to be shown, without '.zip'
+ *
  */
-function vpl_read_list_from_file($filename) {
-    $ret = array ();
-    if (file_exists( $filename )) {
-        $data = file_get_contents( $filename );
-        if ($data > '') {
-            $nl = vpl_detect_newline( $data );
-            $ret = explode( $nl, $data );
-        }
+function vpl_output_zip($zipfilename, $name) {
+    if (! file_exists($zipfilename)) {
+        print_error("Zip file not found");
+        die;
     }
-    return $ret;
-}
+    // Send zipdata.
+    $blocksize = 1000 * 1024;
+    $size = filesize( $zipfilename );
+    $cname = rawurlencode( $name . '.zip' );
+    $contentdisposition = 'Content-Disposition: attachment;';
+    $contentdisposition .= ' filename="' . $name . '.zip";';
+    $contentdisposition .= ' filename*=utf-8\'\'' . $cname;
 
-/**
- * Save an array in a file
- *
- * @param $filename string
- *
- */
-function vpl_write_list_to_file($filename, $list) {
-    $data = '';
-    foreach ($list as $info) {
-        if ($info > '') {
-            if ($data > '') {
-                $data .= "\n";
-            }
-            $data .= $info;
-        }
+    @header( 'Content-Length: ' . $size );
+    @header( 'Content-Type: application/zip; charset=utf-8' );
+    @header( $contentdisposition );
+    @header( 'Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0' );
+    @header( 'Content-Transfer-Encoding: binary' );
+    @header( 'Expires: 0' );
+    @header( 'Pragma: no-cache' );
+    @header( 'Accept-Ranges: none' );
+    // Get zip data.
+    $offset = 0;
+    while ($offset < $size) {
+        echo file_get_contents( $zipfilename, false,  null, $offset, $blocksize);
+        $offset += $blocksize;
     }
-    $fp = vpl_fopen( $filename );
-    fwrite( $fp, $data );
-    fclose( $fp );
+    // Remove zip file.
+    unlink( $zipfilename );
 }
 
 /**
@@ -329,33 +328,22 @@ function vpl_url_add_param($url, $parm, $value) {
 /**
  * Print a message and redirect
  *
- * @param $message string
- *            to be print
  * @param $link URL
  *            to redirect to
- * @param $wait int
- *            time to wait in seconds
+ * @param $message string
+ *            to be print
+ * @param $type string
+ *            type of message (success,info,warning,error). default = info
  * @return void
  */
-function vpl_redirect($link, $message, $wait = 4) {
+function vpl_redirect($link, $message, $type = 'info', $errorcode='') {
     global $OUTPUT;
+    global $CFG;
     if (! mod_vpl::header_is_out()) {
         echo $OUTPUT->header();
     }
-    static $idcount = 0;
-    $idcount ++;
-    $text = '<div class="redirectmessage">' . s( $message ) . '<br/></div>';
-    $text .= '<div class="continuebutton"><a id="vpl_red' . $idcount . '" href="';
-    $text .= $link . '">' . get_string( 'continue' ) . '</a></div>';
-    $deco = urldecode( $link );
-    $deco = html_entity_decode( $deco );
-    if ($wait == 0) {
-        echo vpl_include_js( 'window.location.replace("' . $deco . '");' );
-    } else {
-        $js = 'var vpl_jump=function (){window.location.replace("' . $deco . '");};';
-        echo vpl_include_js( $js . "setTimeout('vpl_jump()',$wait*1000);" );
-    }
-    echo $text;
+    echo $OUTPUT->notification($message, $type);
+    echo $OUTPUT->continue_button($link);
     echo $OUTPUT->footer();
     die();
 }
@@ -368,12 +356,42 @@ function vpl_redirect($link, $message, $wait = 4) {
  * @return void
  */
 function vpl_inmediate_redirect($url) {
-    vpl_redirect( $url, '', 0 );
+    global $OUTPUT;
+    if (! mod_vpl::header_is_out()) {
+        echo $OUTPUT->header();
+    }
+    static $idcount = 0;
+    $idcount ++;
+    $text = '<div class="continuebutton"><a id="vpl_red' . $idcount . '" href="';
+    $text .= $url. '">' . get_string( 'continue' ) . '</a></div>';
+    $deco = urldecode( $url);
+    $deco = html_entity_decode( $deco );
+    echo vpl_include_js( 'window.location.replace("' . $deco . '");' );
+    echo $text;
+    echo $OUTPUT->footer();
+    die();
 }
+/**
+ * Set JavaScript file from subdir jscript to be load
+ *
+ * @param $file string
+ *            name of file to load
+ * @param $defer boolean
+ *            optional set if the load is inmediate or deffered
+ * @return void
+ */
 function vpl_include_jsfile($file, $defer = true) {
     global $PAGE;
     $PAGE->requires->js( new moodle_url( '/mod/vpl/jscript/' . $file ), ! $defer );
 }
+
+/**
+ * Set JavaScript code to be included
+ *
+ * @param $jscript string
+ *            JavaScript code
+ * @return void
+ */
 function vpl_include_js($jscript) {
     if ($jscript == '') {
         return '';
@@ -572,12 +590,10 @@ function vpl_detect_newline(&$data) {
         return "\n"; // Default Unix.
     }
 }
-function vpl_notice($text, $classes = 'generalbox') {
+
+function vpl_notice($text, $type = 'success') {
     global $OUTPUT;
-    echo $OUTPUT->box( $text, $classes, 'vpl.hide' );
-}
-function vpl_error($text, $classes = '') {
-    vpl_notice( $text, 'errorbox' );
+    echo $OUTPUT->notification( $text, $type );
 }
 
 /**
@@ -630,14 +646,18 @@ function vpl_select_array($url, $array) {
 function vpl_fileextension($filename) {
     return pathinfo( $filename, PATHINFO_EXTENSION );
 }
+
 function vpl_is_image($filename) {
     return preg_match( '/^(gif|jpg|jpeg|png|ico)$/i', vpl_fileextension( $filename ) ) == 1;
 }
+
 function vpl_is_binary($filename, &$data = false) {
     if ( vpl_is_image( $filename ) ) {
         return true;
     }
-    if ( preg_match( '/^(zip|jar|pdf|tar)$/i', vpl_fileextension( $filename ) ) == 1 ) {
+    $fileext = 'zip|jar|pdf|tar|bin|7z|arj|deb|gzip|';
+    $fileext .= 'rar|rpm|dat|db|rtf|doc|docx|odt';
+    if ( preg_match( '/^(' . $fileext . ')$/i', vpl_fileextension( $filename ) ) == 1 ) {
         return true;
     }
     if ($data === false) {
@@ -664,7 +684,9 @@ function vpl_is_valid_path_name($path) {
     return true;
 }
 function vpl_is_valid_file_name($filename) {
-    $regexp = '/[\x00-\x1f]|[:-@]|[{-~]|\\|\[|\]|[\/\^`´]|^\-|^ | $|\.\./';
+    $backtick = chr( 96 ); // Avoid warnning in codecheck.
+    $regexp = '/[\x00-\x1f]|[:-@]|[{-~]|\\\\|\[|\]|[\/\^';
+    $regexp .= $backtick . '´]|^\-|^ | $|^\.$|^\.\.$/';
     if (strlen( $filename ) < 1) {
         return false;
     }
@@ -674,17 +696,17 @@ function vpl_is_valid_file_name($filename) {
     return preg_match( $regexp, $filename ) === 0;
 }
 function vpl_truncate_string(&$string, $limit) {
-    $limit -= 3; // Add space for ...
-    if (strlen( $string ) > $limit) {
-        $string = substr( $string, 0, $limit ) . '...';
+    if (strlen( $string ) <= $limit) {
+        return;
     }
+    $string = substr( $string, 0, $limit - 3 ) . '...';
 }
 
 function vpl_bash_export($var, $value) {
     if ( is_int($value) ) {
         return 'export ' . $var . '=' . $value . "\n";
     } else {
-        return 'export ' . $var . "='" . str_replace( "'", "'\\''", $value ) . "'\n";
+        return 'export ' . $var . "='" . str_replace( "'", "'\"'\"'", $value ) . "'\n";
     }
 }
 
@@ -701,28 +723,71 @@ function vpl_s() {
     return htmlspecialchars($content, ENT_QUOTES);
 }
 
+/**
+ * Truncate string fields of the VPL table
+ * @param $instance object with the record
+ * @return void
+ */
 function vpl_truncate_vpl($instance) {
     vpl_truncate_string( $instance->name, 255 );
     vpl_truncate_string( $instance->requirednet, 255 );
     vpl_truncate_string( $instance->password, 255 );
     vpl_truncate_string( $instance->variationtitle, 255 );
 }
+
+/**
+ * Truncate string fields of the variations table
+ * @param $instance object with the record
+ * @return void
+ */
 function vpl_truncate_variations($instance) {
     vpl_truncate_string( $instance->identification, 40 );
 }
+
+/**
+ * Truncate string fields of the running_processes table
+ * @param $instance object with the record
+ * @return void
+ */
 function vpl_truncate_running_processes($instance) {
     vpl_truncate_string( $instance->server, 255 );
 }
+
+/**
+ * Truncate string fields of the jailservers table
+ * @param $instance object with the record
+ * @return void
+ */
 function vpl_truncate_jailservers($instance) {
     vpl_truncate_string( $instance->laststrerror, 255 );
     vpl_truncate_string( $instance->server, 255 );
 }
+
+/**
+ * Check if IP is within networks
+ *
+ * @param $networks string with conma separate networks
+ * @param $ip string optional with the IP to check, if omited then remote IP
+ *
+ * @return boolean true found
+ */
+function vpl_check_network($networks, $ip = false) {
+    $networks = trim($networks);
+    if ($networks == '') {
+        return true;
+    }
+    if ($ip === false) {
+        $ip = getremoteaddr();
+    }
+    return address_in_subnet( $ip, $networks );
+}
+
 /**
  * Get version string
  * @return string
  */
 function vpl_get_version() {
-    static $version;
+    static $version = '';
     if (! isset( $version )) {
         $plugin = new stdClass();
         require_once(dirname( __FILE__ ) . '/version.php');

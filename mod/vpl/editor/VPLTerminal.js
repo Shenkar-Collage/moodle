@@ -21,6 +21,15 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
+/* globals VPL_Clipboard: true */
+/* globals VPL_Terminal: true */
+/* globals VPL_VNC_Client: true */
+/* globals VPL_Util */
+/* globals $JQVPL */
+/* globals Terminal */
+/* globals console */
+/* globals RFB */
+
 VPL_Clipboard = function(dialog_id, hlabel1, action1, hlabel2, action2, onFocus) {
     var tdialog = $JQVPL('#' + dialog_id);
     var label1 = tdialog.find('.vpl_clipboard_label1');
@@ -42,7 +51,7 @@ VPL_Clipboard = function(dialog_id, hlabel1, action1, hlabel2, action2, onFocus)
         width : 'auto',
         height : 'auto',
         resizable : true,
-        dialogClass : 'vpl_ide',
+        dialogClass : 'vpl_clipboard vpl_ide',
     });
     if (onFocus) {
         tdialog.on("click", onFocus);
@@ -102,7 +111,7 @@ VPL_Terminal = function(dialog_id, terminal_id, str) {
     var terminal_tag = $JQVPL('#' + terminal_id);
     this.updateTitle = function() {
         var text = title;
-        if (message != '') {
+        if (message !== '') {
             text += ' (' + message + ')';
         }
         titleText.text(str('console') + ": " + text);
@@ -161,11 +170,11 @@ VPL_Terminal = function(dialog_id, terminal_id, str) {
                     setTimeout(ws.writeIt, 0);
                 }
             };
-            ws.onopen = function(event) {
+            ws.onopen = function() {
                 self.setMessage('');
                 self.setTitle(str('connected'));
             };
-            ws.onclose = function(event) {
+            ws.onclose = function() {
                 self.setTitle(str('connection_closed'));
                 terminal.blur();
                 onClose();
@@ -262,7 +271,7 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
         var l = Math.min(value.length, lastValue.length);
         var mod = 0;
         for (mod = 0; mod < l; mod++) {
-            if (value.charAt(i) != lastValue.charAt(i)) {
+            if (value.charAt(mod) != lastValue.charAt(mod)) {
                 break;
             }
         }
@@ -273,7 +282,7 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
             self.send(value.substr(mod));
         }
         lastValue = value;
-        if (value.length > 500 || value.length == 0) {
+        if (value.length > 500 || value.length === 0) {
             inputarea.blur();
             setTimeout(function() {
                 inputarea.focus();
@@ -300,13 +309,13 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
         inputarea.focus();
         try {
             inputarea.setSelectionRange(resetValue.length, resetValue.length);
-        } catch (e) {
+        } catch (ex) {
         }
         $JQVPL(inputarea).on('change', function() {
             readInput();
             self.send('\r');
         });
-        $JQVPL(inputarea).on('input', function(e) {
+        $JQVPL(inputarea).on('input', function() {
             readInput();
         });
         $JQVPL(inputarea).on('keypress', function(e) {
@@ -356,7 +365,8 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
     }
     var HTMLUpdateClipboard = VPL_Util.gen_icon('copy', 'sw') + ' ' + str('copy');
     var HTMLPaste = VPL_Util.gen_icon('paste', 'sw') + ' ' + str('paste');
-    clipboard = new VPL_Clipboard('vpl_dialog_vnc_clipboard', HTMLUpdateClipboard, copyAction, HTMLPaste, pasteClipboard, lostFocus);
+    clipboard = new VPL_Clipboard('vpl_dialog_vnc_clipboard', HTMLUpdateClipboard,
+                                  copyAction, HTMLPaste, pasteClipboard, lostFocus);
     canvas.on('click', function(e) {
         if (e.target == canvas[0]) {
             getFocus();
@@ -364,14 +374,14 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
             lostFocus();
         }
     });
-    function displayResize() { // TODO hot screen resize.
+    this.displayResize = function() { // TODO hot screen resize.
         if (self.isConnected()) {
             var w = VNCDialog.width();
             var h = VNCDialog.height();
             self.setCanvasSize(w, h);
             rfb.get_display().viewportChange(0, 0, w, h);
         }
-    }
+    };
     VNCDialog.dialog({
         closeOnEscape : false,
         autoOpen : false,
@@ -401,7 +411,7 @@ VPL_VNC_Client = function(vnc_dialog_id, str) {
     });
     this.updateTitle = function() {
         var text = title;
-        if (message != '') {
+        if (message !== '') {
             text += ' (' + message + ')';
         }
         titleText.text(str('console') + ": " + text);

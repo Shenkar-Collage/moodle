@@ -84,8 +84,8 @@ $settings->add(
         new admin_setting_configtext( $prefix . $name, get_string( $name, VPL ), get_string( $name, VPL ),
                 $defaultdefaultexeprocesses, PARAM_INT, 4 ) );
 $settings->add( new admin_setting_heading( 'heading2', '', get_string( 'jail_servers_config', VPL ) ) );
-$default = "#This server is only for test use.\n";
-$default .= "Install your own Jail server and remove the following line as soon as possible.\n";
+$default = "# This server is only for test use.\n";
+$default .= "# Install your own Jail server and remove the following line as soon as possible.\n";
 $default .= 'http://demojail.dis.ulpgc.es';
 $settings->add(
         new admin_setting_configtextarea( $prefix . 'jail_servers', get_string( 'jail_servers', VPL ),
@@ -116,3 +116,47 @@ $default = vpl_get_array_key( $list, 60 );
 $settings->add(
         new admin_setting_configselect( $prefix . 'discard_submission_period', get_string( 'discard_submission_period', VPL ),
                 get_string( 'discard_submission_period_description', VPL ), $default, $list ) );
+$list = array(
+        'ambiance',
+        'chaos',
+        'chrome',
+        'clouds_midnight',
+        'clouds',
+        'cobalt',
+        'crmson_editor',
+        'dawn',
+        'dreamweaver',
+        'eclipse',
+        'github',
+        'idle_fingers',
+        'iplastic',
+        'katzenmilch',
+        'kr_theme',
+        'kr',
+        'kuroir',
+        'merbivore_soft',
+        'merbivore',
+        'mono_industrial',
+        'monokai',
+        'pastel_on_dark',
+        'solarized_dark',
+        'solarized_light',
+        'sqlserver',
+        'terminal',
+        'texmate',
+        'tomorrow_night_blue',
+        'tomorrow_night_bright',
+        'tomorrow_night_eighties',
+        'tomorrow_night',
+        'tomorrow',
+        'twilight',
+        'vibrant_ink',
+        'xcode'
+);
+$themelist = array();
+foreach ($list as $theme) {
+    $themelist [$theme] = $theme;
+}
+$settings->add(
+        new admin_setting_configselect( $prefix . 'editor_theme', get_string( 'editortheme', VPL ),
+                get_string( 'editortheme', VPL ), 'chrome', $themelist ) );

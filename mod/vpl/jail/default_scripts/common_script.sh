@@ -33,6 +33,16 @@ function get_source_files {
 	        SOURCE_FILES=$(echo -en "$SOURCE_FILES\n$source_files_ext_s")
 	    fi
 	done
+	local file_name
+    if [ "$SOURCE_FILES_LINE" != "" -o "$1" == "b64" ] ; then
+		for file_name in "$SOURCE_FILES"
+		do
+			SOURCE_FILE0="$file_name"
+			return 0
+		done
+	fi
+	echo "To run this type of program you need some file with extension \"$@\""
+	exit 0;
 }
 
 function check_program {

@@ -24,108 +24,14 @@
  * @author Lang Johannes <johannes.lang.ima10@fh-joanneum.at>
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
-require_once(dirname(__FILE__).'/similarity_base.class.php');
 
-class vpl_similarity_scala extends vpl_similarity_base {
+defined('MOODLE_INTERNAL') || die();
+
+require_once(dirname(__FILE__).'/similarity_c.class.php');
+
+class vpl_similarity_scala extends vpl_similarity_c {
     public function get_type() {
         return 7;
-    }
-    public function sintax_normalize(&$tokens) {
-        $openbrace = false;
-        $nsemicolon = 0;
-        $ret = array ();
-        $prev = new vpl_token( vpl_token_type::IDENTIFIER, '', 0 );
-        foreach ($tokens as $token) {
-            if ($token->type == vpl_token_type::OPERATOR) {
-                switch ($token->value) {
-                    case '[' :
-                        // Only add ].
-                        break;
-                    case '(' :
-                        // Only add ).
-                        break;
-                    case '{' :
-                        // Only add }.
-                        $nsemicolon = 0;
-                        $openbrace = true;
-                        break;
-                    case '}' :
-                        // Remove unneeded {}.
-                        if (! ($openbrace && $nsemicolon < 2)) {
-                            $ret [] = $token;
-                        }
-                        $openbrace = false;
-                        break;
-                    case ';' :
-                        // Count semicolon after a {.
-                        $nsemicolon ++;
-                        $ret [] = $token;
-                        break;
-                    case '++' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '+';
-                        $ret [] = $token;
-                        break;
-                    case '--' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '-';
-                        $ret [] = $token;
-                        break;
-                    case '+=' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '+';
-                        $ret [] = $token;
-                        break;
-                    case '-=' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '-';
-                        $ret [] = $token;
-                        break;
-                    case '*=' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '*';
-                        $ret [] = $token;
-                        break;
-                    case '/=' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '/';
-                        $ret [] = $token;
-                        break;
-                    case '%=' :
-                        $token->value = '=';
-                        $ret [] = $token;
-                        $token->value = '%';
-                        $ret [] = $token;
-                        break;
-                    case '->' :
-                        if ($prev->value == 'this') {
-                            break;
-                        }
-                        $token->value = '(';
-                        $ret [] = $token;
-                        $token->value = '*';
-                        $ret [] = $token;
-                        $token->value = ')';
-                        $ret [] = $token;
-                        $token->value = '.';
-                        $ret [] = $token;
-                        break;
-                    case '::' :
-                        break;
-                    default :
-                        $ret [] = $token;
-                }
-                $prev = $token;
-            }
-            // TODO remove "(p)".
-        }
-        return $ret;
     }
     public function get_tokenizer() {
         return vpl_tokenizer_factory::get( 'scala' );

@@ -60,7 +60,7 @@ $filelist = $vpl->get_required_fgm()->getFileList();
 $num = 0;
 foreach ($filelist as $filename) {
     if (isset( $fromform->{'file' . $num} )) {
-        $filesselected [$filename] = true;
+        $filesselected [ basename($filename) ] = true;
     }
     $num ++;
 }
@@ -92,11 +92,11 @@ if (isset( $fromform->scanactivity ) && $fromform->scanactivity > 0) {
 }
 // Preprocess files in a ZIP file.
 $name = $form->get_new_filename( 'scanzipfile0' );
-$data = $form->get_file_content( 'scanzipfile0' );
-if ($data !== false && $name !== false) {
+$userdata = $form->get_file_content( 'scanzipfile0' );
+if ($userdata !== false && $name !== false) {
     @set_time_limit( $timelimit );
     $ziploadbox0 = new vpl_progress_bar( s( $name ) );
-    vpl_similarity_preprocess::zip( $simil, $name, $data, $vpl, $filesselected, $allfiles, $joinedfiles, $ziploadbox0 );
+    vpl_similarity_preprocess::zip( $simil, $name, $userdata, $vpl, $filesselected, $allfiles, $joinedfiles, $ziploadbox0 );
 }
 
 // Search similarity in other files after current VPL instance.
@@ -106,7 +106,7 @@ if (isset( $fromform->searchotherfiles )) {
 @set_time_limit( $timelimit );
 $searchprogression = new vpl_progress_bar( get_string( 'similarity', VPL ) );
 $selected = vpl_similarity::get_selected( $simil, $fromform->maxoutput, $il, $searchprogression );
-$extinfo = $USER->id == 2 && $CFG->debugdisplay && $CFG->debug >= 2047;
+$extinfo = false; // Use true to show internal data.
 
 $cm = $vpl->get_course_module();
 $groupmode = groups_get_activity_groupmode( $cm );

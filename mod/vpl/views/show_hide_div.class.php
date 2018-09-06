@@ -23,7 +23,8 @@
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
  */
 
-require_once(dirname(__FILE__).'/../../../config.php');
+defined( 'MOODLE_INTERNAL' ) || die();
+
 require_once(dirname(__FILE__).'/../locallib.php');
 
 class vpl_hide_show_div {
@@ -67,6 +68,7 @@ class vpl_hide_show_div {
             return '';
         }
     }
+
     public function end_div($return = false) {
         if ($return) {
             return '</div>';
@@ -75,4 +77,9 @@ class vpl_hide_show_div {
             return '';
         }
     }
+
+    public function get_div_id() {
+        return 'shd' . $this->id;
+    }
+
 }

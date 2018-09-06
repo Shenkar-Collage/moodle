@@ -67,7 +67,7 @@ class mod_vpl_mod_form extends moodleform_mod {
 
         $mform->addElement( 'header', 'submissionrestrictions', get_string( 'submissionrestrictions', VPL ) );
         $mform->addElement( 'text', 'maxfiles', get_string( 'maxfiles', VPL ) );
-        $mform->setType( 'maxfiles', PARAM_INT );
+        $mform->setType( 'maxfiles', PARAM_TEXT);
         $mform->setDefault( 'maxfiles', 1 );
         $mform->addElement( 'select', 'worktype', get_string( 'worktype', VPL ), array (
                 0 => get_string( 'individualwork', VPL ),
@@ -85,7 +85,7 @@ class mod_vpl_mod_form extends moodleform_mod {
         }
         $mform->addElement( 'select', 'maxfilesize', get_string( 'maxfilesize', VPL ), vpl_get_select_sizes( 16 * 1024, $max ) );
         $mform->setType( 'maxfilesize', PARAM_INT );
-        $mform->setDefault( 'maxfilesize', 0 );
+        $mform->setDefault( 'maxfilesize', 1 );
         $mform->setAdvanced( 'maxfilesize' );
         $mform->addElement( 'passwordunmask', 'password', get_string( 'password' ) );
         $mform->setType( 'password', PARAM_TEXT );
@@ -96,8 +96,28 @@ class mod_vpl_mod_form extends moodleform_mod {
         $mform->setType( 'requirednet', PARAM_TEXT );
         $mform->setDefault( 'requirednet', '' );
         $mform->setAdvanced( 'requirednet' );
+        $mform->addElement( 'selectyesno', 'sebrequired', get_string( 'sebrequired', VPL ) );
+        $mform->setDefault( 'sebrequired', 0 );
+        $mform->addHelpButton('sebrequired', 'sebrequired', VPL);
+        $mform->setAdvanced( 'sebrequired' );
+        $mform->addElement( 'textarea', 'sebkeys', get_string( 'sebkeys', VPL ), array (
+                'cols' => 66,
+                'rows' => 2
+        ) );
+        $mform->setType( 'sebkeys', PARAM_TEXT);
+        $mform->setDefault( 'sebkeys', '' );
+        $mform->addHelpButton('sebkeys', 'sebkeys', VPL);
+        $mform->setAdvanced( 'sebkeys' );
         // Grade.
         $this->standard_grading_coursemodule_elements();
+        $mform->addElement( 'text', 'reductionbyevaluation', get_string( 'reductionbyevaluation', VPL ));
+        $mform->setType( 'reductionbyevaluation', PARAM_TEXT);
+        $mform->setDefault( 'reductionbyevaluation', 0 );
+        $mform->addHelpButton('reductionbyevaluation', 'reductionbyevaluation', VPL);
+        $mform->addElement( 'text', 'freeevaluations', get_string( 'freeevaluations', VPL ));
+        $mform->setType( 'freeevaluations', PARAM_TEXT);
+        $mform->setDefault( 'freeevaluations', 0 );
+        $mform->addHelpButton('freeevaluations', 'freeevaluations', VPL);
         $mform->addElement( 'selectyesno', 'visiblegrade', get_string( 'visiblegrade', VPL ) );
         $mform->setDefault( 'visiblegrade', 1 );
         // Standard course elements.
@@ -105,6 +125,23 @@ class mod_vpl_mod_form extends moodleform_mod {
         // End form.
         $this->add_action_buttons();
     }
+
+    public function validate($field, $pattern, $message, & $data, & $errors) {
+        $data[$field] = trim( $data[$field] );
+        $res = preg_match($pattern, $data[$field]);
+        if ( $res == 0 || $res == false) {
+            $errors[$field] = $message;
+        }
+    }
+
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        $this->validate('freeevaluations', '/^[0-9]*$/', '[0..]', $data, $errors);
+        $this->validate('maxfiles', '/^[0-9]*$/', '[0..]', $data, $errors);
+        $this->validate('reductionbyevaluation', '/^[0-9]*(\.[0-9]+)?%?$/', '#[.#][%]', $data, $errors);
+        return $errors;
+    }
+
     public function display() {
         $id = optional_param( 'update', false, PARAM_INT );
         if ($id) {
