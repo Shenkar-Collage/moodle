@@ -1,0 +1,170 @@
+/*
+* Full Screen mode and full sceen trigger icons
+*/
+
+/* By default do not display the full screen button. */
+div.fullscreen,
+#fullscreenpadding {
+    display: none;
+}
+
+/* Full screen mode should have no effect below this resolution. */
+@media (min-width: 769px) {
+    /* Wrapper for the button containing the fixed position button. */
+    #fullscreenpadding {
+        display: block;
+        float: right;
+        padding-left: 20px;
+    }
+
+    /* Common settings to all versions of the button. */
+    div.fullscreen {
+        background: url([[pix:local_fullscreen|fullscreen]]) no-repeat center center;
+        background-color: #FEFEFE;
+        background-size: 20px;
+        -moz-border-radius: 50%;
+        -webkit-border-radius: 50%;
+        border-radius: 50%;
+        -webkit-box-shadow: 0 0 5px rgba(0,0,0,0.28);
+        -moz-box-shadow: 0 0 5px rgba(0,0,0,0.28);
+        box-shadow: 0 0 5px rgba(0,0,0,0.28);
+        cursor: pointer;
+        display: block;
+        padding: 20px;
+        -webkit-transition: 0.25s;
+        -moz-transition: 0.25s;
+        -o-transition: 0.25s;
+        transition: 0.25s;
+    }
+
+    /* The button during full screen mode. */
+    div.fullscreen.restore_fullscreen {
+        background: url([[pix:local_fullscreen|fullscreen_collapse]]) no-repeat center center;
+    }
+
+    /* The button on mouse over. */
+    div.fullscreen:hover {
+        background-color: #ffffff;
+        -webkit-box-shadow: 0 0 5px rgba(0,0,0,1);
+        -moz-box-shadow: 0 0 5px rgba(0,0,0,1);
+        box-shadow: 0 0 5px rgba(0,0,0,1);
+    }
+
+    /* The non hovering button. */
+    #region-main div#fullscreen {
+       float: right;
+       position: relative;
+       z-index: 10;
+    }
+
+    /* The hovering button. */
+    div#fullscreenfloat {
+        background-color: #F9FAFC;
+        filter: alpha(opacity=80);
+        opacity: 1;
+        position:fixed;
+        right:2%;
+        top:70px;
+        z-index: 10000;
+    }
+
+    /* Styles for when full screen mode is active. */
+    .fullscreenmode.row-fluid .span4 {
+        width: 50%;
+    }
+    html .fullscreenmode, body .fullscreenmode {
+        height: inherit;
+    }
+    .fullscreenmode #page {
+        margin-bottom: 60px;
+    }
+    .fullscreenmode .pull-right[class*="span"], .fullscreenmode .row-fluid .pull-right[class*="span"] {
+        float: none;
+        clear: both;
+    }
+    .fullscreenmode .push {
+        display: none;
+    }
+    .fullscreenmode #region-main {
+      margin-bottom: 20px;
+    }
+    .fullscreenmode .row-fluid .span9, .fullscreenmode .row-fluid .span8 {
+        width: 100%;
+    }
+    .fullscreenmode .container-fluid {
+        width: 97.5%;
+    }
+
+    .fullscreenmode .empty-region-side-post.used-region-side-pre #region-main,
+    .fullscreenmode .jsenabled.docked-region-side-post.used-region-side-pre #region-main {
+        display: none;
+    }
+
+    .fullscreenmode #region-main,
+    .fullscreenmode #region-main.has-blocks,
+    .fullscreenmode #region-main.span8.pull-right,
+    .fullscreenmode.jsenabled.has_dock.has_dock_left_vertical.docked-region-side-post #region-main.span8.pull-right,
+    .fullscreenmode.empty-region-side-post.used-region-side-pre #region-main.span8,
+    .fullscreenmode.jsenabled.docked-region-side-post.used-region-side-pre #region-main.span8 {
+        width: 100%;
+    }
+
+    .fullscreenmode #block-region-side-post,
+    .fullscreenmode #block-region-side-pre {
+        display: none;
+    }
+    .fullscreenmode .container-fluid {
+        max-width: 100%;
+    }
+
+    .fullscreenmode.has_dock has_dock_left_vertical #region-main {
+        width: 97.5%;
+    }
+
+    /* Expand the content area in full screen mode */
+    .pagelayout-course.fullscreenmode .navbar-inner,
+    .pagelayout-incourse.fullscreenmode .navbar-inner,
+    .pagelayout-course.fullscreenmode .container-fluid,
+    .pagelayout-incourse.fullscreenmode .container-fluid {
+        max-width: 100%;
+    }
+
+    /* Remove block docking area. */
+    body.has_dock.fullscreenmode #dock {
+        display: none;
+    }
+
+    body.has_dock.fullscreenmode #page {
+        padding-left: 0;
+    }
+}
+
+@media (min-width: 2000px) {
+    .fullscreenmode .container-fluid {
+        width: 98%;
+    }
+}
+
+@media (max-width: 1597px) {
+    .fullscreenmode .container-fluid {
+        width: 97%;
+    }
+}
+
+@media (max-width: 1333px) {
+    .fullscreenmode .container-fluid {
+        width: 96%;
+    }
+}
+
+@media (max-width: 1005px) {
+    .fullscreenmode .container-fluid {
+        width: 95%;
+    }
+}
+
+@media (max-width: 807px) {
+    .fullscreenmode .container-fluid {
+        width: 94%;
+    }
+}
