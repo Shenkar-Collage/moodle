@@ -1,0 +1,19 @@
+/**
+ * File styles.css.
+ * Contains base styles.
+ *
+ * @package    filter_chemrender
+ * @copyright  2016 UC Regents
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+.filter_chemrender_jmol_options_left {
+    float: left;
+}
+.filter_chemrender_jmol_options_right  {
+    float: right;
+}
+.filter_chemrender_downloadlink,
+.filter_chemrender_jmol_helplink {
+    background-color: transparent;
+}
