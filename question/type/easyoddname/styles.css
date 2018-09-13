@@ -1,0 +1,91 @@
+.que.easyoddname .answer {
+    padding: 0.3em;
+    width: auto;
+    display: inline;
+}
+.que.easyoddname .answer input {
+    width: 80%;
+}
+
+#play {
+    border: 1px solid #000000;
+    margin: 10px;
+    padding: 10px; 
+}
+
+#play:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+}
+
+ul.dropable {
+height:1.5em;
+border: 2px solid green;
+}
+
+.dropable {
+cursor: move;
+padding: 10px;
+font-size: 1.5em;
+}
+
+ul.dragable li {
+    background-image: none;
+    cursor: move;
+    list-style-type: none;
+    position: relative;
+    font-size: 1.5em;
+    margin-right: 4px;  
+}
+
+/*
+ul#list1 .list2 {
+    float: left;  
+    height: 300px;
+    padding: 0;
+    position: relative;
+    width: 600px;  
+    padding-top: 20px;
+}
+*/ 
+
+#play ul.list2 {
+    float: left;
+    height: 300px;
+    margin: 10px; 
+    padding: 10px;
+    position: relative;
+    line-height:150%;
+
+}
+
+#list4 {
+    float: left;
+    line-height:2em;
+}
+
+#play ul li.list1 {
+    background-color: #8DD5E7;
+/*    border: 1px solid #004C6D; */
+    display: inline;
+}
+ul li.list2 {
+    background-color: #EDFF9F;
+    border: 1px solid #CDCDCD;
+    display: inline-block;
+    line-height:1.1em;
+}
+
+ul#list1 {
+padding: 10px;
+}
+
+#trashcan {
+float: right;
+}
+
+
+
