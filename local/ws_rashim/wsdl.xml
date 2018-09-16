@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+			 xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+			 xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+			 xmlns:soap-enc="http://schemas.xmlsoap.org/soap/encoding/"
+			 xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			 xmlns:tns="http://www.rashim.co.il/ws/rashim/wsdl"
+			 targetNamespace="http://www.rashim.co.il/ws/rashim/wsdl">
+
+	<message name="Session_LoginRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+	</message>
+
+	<message name="Session_LoginResponse">
+		<part name="Session_Key" type="xsd:string" />
+	</message>
+
+	<message name="Session_LogoutRequest">
+		<part name="Session_Key" type="xsd:string" />
+	</message>
+
+	<message name="Session_LogoutResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="User_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="User_ID" type="xsd:string" />
+		<part name="User_Name" type="xsd:string" />
+		<part name="User_Psw" type="xsd:string" />
+		<part name="User_FirstName" type="xsd:string" />
+		<part name="User_LastName" type="xsd:string" />
+		<part name="User_Email" type="xsd:string" />
+		<part name="User_Phone1" type="xsd:string" />
+		<part name="User_Phone2" type="xsd:string" />
+		<part name="User_Address" type="xsd:string" />
+		<part name="User_Lang" type="xsd:string" />
+		<part name="User_Extra" type="xsd:string" />
+		<part name="Course_ID" type="xsd:string" />
+		<part name="Course_Role" type="xsd:string" />
+		<part name="Group_ID" type="xsd:string" />
+		<part name="Group_Name" type="xsd:string" />
+		<part name="Role_Start" type="xsd:string" />
+		<part name="Role_End" type="xsd:string" />
+	</message>
+
+	<message name="User_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="User_RemoveRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="User_ID" type="xsd:string" />
+		<part name="Course_ID" type="xsd:string" />
+		<part name="Course_Role" type="xsd:string" />
+	</message>
+
+	<message name="User_RemoveResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Course_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="Course_ID" type="xsd:string" />
+		<part name="Course_Psw" type="xsd:string" />
+		<part name="Course_Name" type="xsd:string" />
+		<part name="Course_ShortName" type="xsd:string" />
+		<part name="Course_SylUrl" type="xsd:string" />
+		<part name="Category_Code" type="xsd:string" />
+		<part name="Category_SnlCode" type="xsd:string" />
+		<part name="Category_SnlName" type="xsd:string" />
+		<part name="Category_ShlCode" type="xsd:string" />
+		<part name="Category_ShlName" type="xsd:string" />
+		<part name="Category_MslCode" type="xsd:string" />
+		<part name="Category_MslName" type="xsd:string" />
+	</message>
+
+	<message name="Course_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Course_DeleteRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Course_ID" type="xsd:string" />
+		<part name="NoDelete" type="xsd:boolean" />
+	</message>
+
+	<message name="Course_DeleteResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Bhn_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="Course_ID" type="xsd:string" />
+		<part name="Bhn_Shm" type="xsd:string" />
+		<part name="Michlol_Krs" type="xsd:string" />
+		<part name="Michlol_Sms" type="xsd:string" />
+		<part name="Michlol_Sid" type="xsd:string" />
+		<part name="Moodle_Type" type="xsd:string" />
+	</message>
+
+	<message name="Bhn_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Bhn_DeleteRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Michlol_Krs" type="xsd:string" />
+		<part name="Michlol_Sms" type="xsd:string" />
+		<part name="Michlol_Sid" type="xsd:string" />
+	</message>
+
+	<message name="Bhn_DeleteResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="TikYesod_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="XML" type="xsd:string" />
+	</message>
+
+	<message name="TikYesod_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="TikYesod_DeleteRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Shl" type="xsd:string" />
+		<part name="Hit" type="xsd:string" />
+	</message>
+
+	<message name="TikYesod_DeleteResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="TikYesod_Shl_ChangeRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="XML" type="xsd:string" />
+	</message>
+
+	<message name="TikYesod_Shl_ChangeResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+		
+	<message name="Machzor_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="XML" type="xsd:string" />
+	</message>
+
+	<message name="Machzor_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Machzor_DeleteRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Snl" type="xsd:string" />
+		<part name="Shl" type="xsd:string" />
+		<part name="Hit" type="xsd:string" />
+	</message>
+
+	<message name="Machzor_DeleteResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+	
+	<message name="Machzor_User_AddRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="User_ID" type="xsd:string" />
+		<part name="User_Name" type="xsd:string" />
+		<part name="User_Psw" type="xsd:string" />
+		<part name="User_FirstName" type="xsd:string" />
+		<part name="User_LastName" type="xsd:string" />
+		<part name="User_Email" type="xsd:string" />
+		<part name="User_Phone1" type="xsd:string" />
+		<part name="User_Phone2" type="xsd:string" />
+		<part name="User_Address" type="xsd:string" />
+		<part name="User_Lang" type="xsd:string" />
+		<part name="User_Extra" type="xsd:string" />
+		<part name="Snl" type="xsd:string" />
+		<part name="Shl" type="xsd:string" />
+		<part name="Hit" type="xsd:string" />
+		<part name="Course_Role" type="xsd:string" />
+	</message>
+
+	<message name="Machzor_User_AddResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Machzor_User_RemoveRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="User_ID" type="xsd:string" />
+		<part name="Snl" type="xsd:string" />
+		<part name="Shl" type="xsd:string" />
+		<part name="Hit" type="xsd:string" />
+		<part name="Course_Role" type="xsd:string" />
+	</message>
+
+	<message name="Machzor_User_RemoveResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="MachzorMfgs_UpdRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="XML" type="xsd:string" />
+	</message>
+
+	<message name="MachzorMfgs_UpdResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="MachzorMfgs_DelRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="XML" type="xsd:string" />
+	</message>
+
+	<message name="MachzorMfgs_DelResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+		
+	<message name="Course_Update_KeyRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Course_Old_ID" type="xsd:string" />
+		<part name="Course_New_ID" type="xsd:string" />
+		<part name="Course_ShortName" type="xsd:string" />
+	</message>
+
+	<message name="Course_Update_KeyResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<message name="Manage_KTreeRequest">
+		<part name="Admin_Name" type="xsd:string" />
+		<part name="Admin_Psw" type="xsd:string" />
+		<part name="Session_Key" type="xsd:string" />
+		<part name="Category_Id" type="xsd:string" />
+		<part name="Parent_Id" type="xsd:string" />
+		<part name="Category_Name" type="xsd:string" />
+		<part name="User_Id" type="xsd:string" />
+		<part name="Role" type="xsd:string" />
+		<part name="Add" type="xsd:boolean" />
+	</message>
+
+	<message name="Manage_KTreeResponse">
+		<part name="Return" type="xsd:boolean" />
+	</message>
+
+	<portType name="WebServicePortType">
+		<operation name="Session_Login">
+			<documentation>Login</documentation>
+			<input message="tns:Session_LoginRequest" />
+			<output message="tns:Session_LoginResponse" />
+		</operation>
+
+		<operation name="Session_Logout">
+			<documentation>Logout</documentation>
+			<input message="tns:Session_LogoutRequest" />
+			<output message="tns:Session_LogoutResponse" />
+		</operation>
+
+		<operation name="User_Add">
+			<documentation>Adds/Updates user, and enrols if necessary</documentation>
+			<input message="tns:User_AddRequest" />
+			<output message="tns:User_AddResponse" />
+		</operation>
+
+		<operation name="User_Remove">
+			<documentation>Removes user from course</documentation>
+			<input message="tns:User_RemoveRequest" />
+			<output message="tns:User_RemoveResponse" />
+		</operation>
+
+		<operation name="Course_Add">
+			<documentation>Adds/Updates course</documentation>
+			<input message="tns:Course_AddRequest" />
+			<output message="tns:Course_AddResponse" />
+		</operation>
+
+		<operation name="Course_Delete">
+			<documentation>Deletes course</documentation>
+			<input message="tns:Course_DeleteRequest" />
+			<output message="tns:Course_DeleteResponse" />
+		</operation>
+
+		<operation name="Bhn_Add">
+			<documentation>Adds/Updates course assigments</documentation>
+			<input message="tns:Bhn_AddRequest" />
+			<output message="tns:Bhn_AddResponse" />
+		</operation>
+
+		<operation name="Bhn_Delete">
+			<documentation>Deletes course assigments</documentation>
+			<input message="tns:Bhn_DeleteRequest" />
+			<output message="tns:Bhn_DeleteResponse" />
+		</operation>
+
+		<operation name="TikYesod_Add">
+			<documentation>Adds tik yesod</documentation>
+			<input message="tns:TikYesod_AddRequest" />
+			<output message="tns:TikYesod_AddResponse" />
+		</operation>
+
+		<operation name="TikYesod_Delete">
+			<documentation>Removes tik yesod</documentation>
+			<input message="tns:TikYesod_DeleteRequest" />
+			<output message="tns:TikYesod_DeleteResponse" />
+		</operation>
+
+		<operation name="TikYesod_Shl_Change">
+			<documentation>Changes shl of tik yesod (and related mahzorim)</documentation>
+			<input message="tns:TikYesod_Shl_ChangeRequest" />
+			<output message="tns:TikYesod_Shl_ChangeResponse" />
+		</operation>
+		
+		<operation name="Machzor_Add">
+			<documentation>Adds machzor</documentation>
+			<input message="tns:Machzor_AddRequest" />
+			<output message="tns:Machzor_AddResponse" />
+		</operation>
+
+		<operation name="Machzor_Delete">
+			<documentation>Removes machzor</documentation>
+			<input message="tns:Machzor_DeleteRequest" />
+			<output message="tns:Machzor_DeleteResponse" />
+		</operation>
+
+		<operation name="Machzor_User_Add">
+			<documentation>Adds/Updates user, and enrols if necessary</documentation>
+			<input message="tns:Machzor_User_AddRequest" />
+			<output message="tns:Machzor_User_AddResponse" />
+		</operation>
+
+		<operation name="Machzor_User_Remove">
+			<documentation>Removes user from course</documentation>
+			<input message="tns:Machzor_User_RemoveRequest" />
+			<output message="tns:Machzor_User_RemoveResponse" />
+		</operation>
+
+		<operation name="MachzorMfgs_Upd">
+			<documentation>Updates meeting in machzor</documentation>
+			<input message="tns:MachzorMfgs_UpdRequest" />
+			<output message="tns:MachzorMfgs_UpdResponse" />
+		</operation>
+
+		<operation name="MachzorMfgs_Del">
+			<documentation>Updates meeting in machzor</documentation>
+			<input message="tns:MachzorMfgs_DelRequest" />
+			<output message="tns:MachzorMfgs_DelResponse" />
+		</operation>
+		
+		<operation name="Course_Update_Key">
+			<documentation>Updates course key</documentation>
+			<input message="tns:Course_Update_KeyRequest" />
+			<output message="tns:Course_Update_KeyResponse" />
+		</operation>
+
+		<operation name="Manage_KTree">
+			<documentation>Manages Knowledge Tree</documentation>
+			<input message="tns:Manage_KTreeRequest" />
+			<output message="tns:Manage_KTreeResponse" />
+		</operation>
+	</portType>
+
+	<binding name="WebServiceBinding" type="tns:WebServicePortType">
+		<soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http" />
+
+		<operation name="Session_Login">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Session_Login" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Session_Logout">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Session_Logout" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="User_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#User_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="User_Remove">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#User_Remove" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Course_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Course_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Course_Delete">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Course_Delete" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Bhn_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Bhn_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Bhn_Delete">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Bhn_Delete" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="TikYesod_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#TikYesod_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="TikYesod_Delete">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#TikYesod_Delete" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="TikYesod_Shl_Change">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#TikYesod_Shl_Change" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+		
+		<operation name="Machzor_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Machzor_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Machzor_Delete">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Machzor_Delete" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Machzor_User_Add">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Machzor_User_Add" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Machzor_User_Remove">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Machzor_User_Remove" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="MachzorMfgs_Upd">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#MachzorMfgs_Upd" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="MachzorMfgs_Del">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#MachzorMfgs_Del" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+		
+		<operation name="Course_Update_Key">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Course_Update_Key" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+
+		<operation name="Manage_KTree">
+			<soap:operation soapAction="http://www.rashim.co.il/ws/rashim/wsdl#Manage_KTree" style="rpc" />
+			<input>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</input>
+			<output>
+				<soap:body use="encoded" namespace="http://www.rashim.co.il/ws/rashim/wsdl" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" />
+			</output>
+		</operation>
+	</binding>
+
+	<service name="WebService">
+		<port name="WebServicePort" binding="tns:WebServiceBinding">
+			<soap:address location="http://www.rashim.co.il/ws/rashim/service.php" />
+		</port>
+	</service>
+</definitions>

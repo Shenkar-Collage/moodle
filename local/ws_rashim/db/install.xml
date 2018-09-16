@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<XMLDB PATH="local/ws_rashim/db" VERSION="20161212.00" COMMENT="XMLDB file for Michlol syncronization services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="..../lib/xmldb/xmldb.xsd">
+	<TABLES>
+		<TABLE NAME="webservices_sessions" COMMENT="Stores web services session data" NEXT="meetings">
+			<FIELDS>
+				<FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="sessionbegin"/>
+				<FIELD NAME="sessionbegin" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="sessionend"/>
+				<FIELD NAME="sessionend" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="sessionbegin" NEXT="sessionkey"/>
+				<FIELD NAME="sessionkey" TYPE="char" LENGTH="32" NOTNULL="true" SEQUENCE="false" PREVIOUS="sessionend" NEXT="userid"/>
+				<FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="sessionkey" NEXT="verified"/>
+				<FIELD NAME="verified" TYPE="int" LENGTH="1" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="userid" NEXT="ip"/>
+				<FIELD NAME="ip" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" PREVIOUS="verified" />
+			</FIELDS>
+			<KEYS>
+				<KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="Primary key for webservices_sessions"/>
+			</KEYS>
+		</TABLE>
+		<TABLE NAME="meetings" COMMENT="Stores data to enable sorting meetings" PREVIOUS="webservices_sessions" NEXT="matalot">
+			<FIELDS>
+				<FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="snl"/>
+				<FIELD NAME="snl" TYPE="char" LENGTH="4" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="shl"/>
+				<FIELD NAME="shl" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="snl" NEXT="hit"/>
+				<FIELD NAME="hit" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="shl" NEXT="krs"/>
+				<FIELD NAME="krs" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="hit" NEXT="mfgs"/>
+				<FIELD NAME="mfgs" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" PREVIOUS="krs" NEXT="course_id"/>
+				<FIELD NAME="course_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="mfgs" NEXT="section_num"/>
+				<FIELD NAME="section_num" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="course_id" NEXT="subject"/>
+				<FIELD NAME="subject" TYPE="char" LENGTH="256" NOTNULL="true" SEQUENCE="false" PREVIOUS="section_num" NEXT="week"/>
+				<FIELD NAME="week" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="subject" NEXT="day"/>
+				<FIELD NAME="day" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="week" NEXT="meeting_date"/>
+				<FIELD NAME="meeting_date" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="day" NEXT="hour_begin"/>
+				<FIELD NAME="hour_begin" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="meeting_date" NEXT="hour_end"/>
+				<FIELD NAME="hour_end" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="hour_begin"/>
+			</FIELDS>
+			<KEYS>
+				<KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="Primary key for meetings"/>
+			</KEYS>
+		</TABLE>
+		<TABLE NAME="matalot" COMMENT="Stores data to link matalot to michlol" PREVIOUS="meetings">
+			<FIELDS>
+				<FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" NEXT="course_id"/>
+				<FIELD NAME="course_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="id" NEXT="michlol_krs_bhn_krs"/>
+				<FIELD NAME="michlol_krs_bhn_krs" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="course_id" NEXT="michlol_krs_bhn_sms"/>
+				<FIELD NAME="michlol_krs_bhn_sms" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" PREVIOUS="michlol_krs_bhn_krs" NEXT="michlol_krs_bhn_sid"/>
+				<FIELD NAME="michlol_krs_bhn_sid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="michlol_krs_bhn_sms" NEXT="moodle_type"/>
+				<FIELD NAME="moodle_type" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" PREVIOUS="michlol_krs_bhn_sid" NEXT="moodle_id"/>
+				<FIELD NAME="moodle_id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="moodle_type"/>
+			</FIELDS>
+			<KEYS>
+				<KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="Primary key for matalot"/>
+			</KEYS>
+		</TABLE>
+	</TABLES>
+</XMLDB>
+
