@@ -38,7 +38,8 @@ class login_signup_form extends moodleform implements renderable, templatable {
         $mform->addElement('header', 'createuserandpass', get_string('createuserandpass'), '');
 
 
-        $mform->addElement('text', 'username', get_string('username'), 'maxlength="100" size="12" autocapitalize="none"');
+       // $mform->addElement('text', 'username', get_string('username'), 'maxlength="100" size="12" autocapitalize="none"');
+	$mform->addElement('text', 'username', get_string('username'), 'maxlength="100" size="12" onKeyUp="removeLeadingZero1(this.value);"');
         $mform->setType('username', PARAM_RAW);
         $mform->addRule('username', get_string('missingusername'), 'required', null, 'client');
 
