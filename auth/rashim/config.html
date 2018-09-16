@@ -1,0 +1,50 @@
+<?php
+include_once(dirname(__FILE__).'/../../config.php');
+$yesno = array(get_string('yes'), get_string('no'));
+$default = array('addres' => '', 'debug' => 'yesno', 'debug_to_log' => 'yesno', 'debug_log_file' => '');
+if(!isset($config->auth_rashim_addres))   {
+    $config->auth_rashim_addres = '';
+}
+if(!isset($config->auth_rashim_debug))   {
+        $config->auth_rashim_debug = 1;
+}
+if(!isset($config->auth_rashim_debug_to_log))   {
+        $config->auth_rashim_debug_to_log = 1;
+}
+if(!isset($config->auth_rashim_debug_log_file))   {
+        $config->auth_rashim_debug_log_file = '';
+}
+?>
+<table cellspacing="0" cellpadding="5" border="0">
+    <tr>
+        <td colspan="2">
+            <h4><?php print_string('auth_rashim_server_settings', 'auth_rashim') ?> </h4>
+        </td>
+    </tr>
+<?php foreach($default as $key => $val) : ?>
+    <tr valign="top"<?php echo (in_array($key, $required) ? 'class="required"' : '') ?>>
+        <td align="right">
+            <label for="<?php echo 'auth_rashim_'.$key?>">
+                <?php print_string('auth_rashim_'.$key.'_key','auth_rashim') ?>
+            </label>
+        </td>
+    <td>
+    <?php if (empty($val)) {?>
+    <input name="<?php echo 'auth_rashim_'.$key?>" id="<?php echo 'auth_rashim_'.$key?>" type="text" size="30" value="<?php echo $config->{'auth_rashim_'.$key}?>" style="direction: ltr;" />
+    <?php } else { 
+            echo html_writer::select($yesno, 'auth_rashim_'.$key, $config->{'auth_rashim_'.$key}, 1, array("id" => 'auth_rashim_'.$key));
+        }
+     if (isset($err[$key])) formerr($err[$key]); ?>
+        </td>
+        <td>
+            <?php print_string('auth_rashim_'.$key,'auth_rashim') ?>
+        </td>
+    </tr>
+<?php endforeach; ?>
+</table>
+
+<table cellspacing="0" cellpadding="5" border="0">
+<?php
+print_auth_lock_options($this->authtype, $user_fields, get_string('auth_fieldlocks_help', 'auth'), false, false);
+?>
+</table>

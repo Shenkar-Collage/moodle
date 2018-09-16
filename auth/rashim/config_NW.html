@@ -1,0 +1,25 @@
+<?php
+include_once(dirname(__FILE__).'/../../config.php');
+//$yesno = array(get_string('yes'), get_string('no'));
+//$default = array('addres' => '', 'debug' => 'yesno', 'debug_to_log' => 'yesno', 'debug_log_file' => '');
+
+
+$settings->add(new admin_setting_configtext('auth_rashim_addres_key', get_string('auth_rashim_addres_key', 'auth_rashim'),
+                   get_string('auth_rashim_addres', 'auth_rashim'), '', PARAM_TEXT));
+
+$options = array(0 => get_string('no'), 1 => get_string('yes'));
+
+$settings->add(new admin_setting_configselect('auth_rashim_debug_key', get_string('auth_rashim_debug_key', 'auth_rashim'),
+                       get_string('auth_rashim_debug', 'auth_rashim'), 0, $options));
+$settings->add(new admin_setting_configselect('auth_rashim_debug_to_log_key', get_string('auth_rashim_debug_to_log_key', 'auth_rashim'),
+                       get_string('auth_rashim_debug_to_log', 'auth_rashim'), 0, $options));
+
+$settings->add(new admin_setting_configtext('auth_rashim_debug_log_file_key', get_string('auth_rashim_debug_log_file_key', 'auth_rashim'),
+                   get_string('auth_rashim_debug_log_file', 'auth_rashim'), '', PARAM_TEXT));
+
+?>
+<table cellspacing="0" cellpadding="5" border="0">
+<?php
+print_auth_lock_options($this->authtype, $user_fields, get_string('auth_fieldlocks_help', 'auth'), false, false);
+?>
+</table>
