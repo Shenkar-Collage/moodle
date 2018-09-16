@@ -413,24 +413,29 @@ function useredit_shared_definition(&$mform, $editoroptions, $filemanageroptions
     $mform->setType('msn', core_user::get_property_type('msn'));
     $mform->setForceLtr('msn');
 
-    $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="255" size="25"');
+   // $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="255" size="25"');
+    $mform->addElement('text', 'idnumber', get_string('idnumber'), 'maxlength="255" size="25" disabled');
     $mform->setType('idnumber', core_user::get_property_type('idnumber'));
 
-    $mform->addElement('text', 'institution', get_string('institution'), 'maxlength="255" size="25"');
+    //$mform->addElement('text', 'institution', get_string('institution'), 'maxlength="255" size="25"');
+    $mform->addElement('text', 'institution', get_string('institution'), 'maxlength="255" size="25" disabled');
     $mform->setType('institution', core_user::get_property_type('institution'));
 
     $mform->addElement('text', 'department', get_string('department'), 'maxlength="255" size="25"');
     $mform->setType('department', core_user::get_property_type('department'));
 
-    $mform->addElement('text', 'phone1', get_string('phone1'), 'maxlength="20" size="25"');
+   // $mform->addElement('text', 'phone1', get_string('phone1'), 'maxlength="20" size="25"');
+    $mform->addElement('text', 'phone1', get_string('phone1'), 'maxlength="20" size="25" disabled');
     $mform->setType('phone1', core_user::get_property_type('phone1'));
     $mform->setForceLtr('phone1');
 
-    $mform->addElement('text', 'phone2', get_string('phone2'), 'maxlength="20" size="25"');
+    //$mform->addElement('text', 'phone2', get_string('phone2'), 'maxlength="20" size="25"');
+    $mform->addElement('text', 'phone2', get_string('phone2'), 'maxlength="20" size="25" disabled');
     $mform->setType('phone2', core_user::get_property_type('phone2'));
     $mform->setForceLtr('phone2');
 
-    $mform->addElement('text', 'address', get_string('address'), 'maxlength="255" size="25"');
+    //$mform->addElement('text', 'address', get_string('address'), 'maxlength="255" size="25"');
+    $mform->addElement('text', 'address', get_string('address'), 'maxlength="255" size="25" disabled');
     $mform->setType('address', core_user::get_property_type('address'));
 }
 
