@@ -67,10 +67,12 @@ M.util.init_block_hider = function(Y, config) {
                     id : {},
                     preference : {},
                     iconVisible : {
-                        value : 'icon fa fa-minus-square-o fa-fw'
+                       // value : 'icon fa fa-minus-square-o fa-fw'
+                       value : 'icon fa fa-minus-square-o fa-fw'
                     },
                     iconHidden : {
-                        value : 'icon fa fa-plus-square-o fa-fw'
+                       // value : 'icon fa fa-plus-square-o fa-fw'
+                       value : 'icon fa fa-plus-square-o fa-fw'
                     },
                     block : {
                         setter : function(node) {
