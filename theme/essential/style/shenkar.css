@@ -1,0 +1,65 @@
+/* Fix breadcrumb nav in RTL mode */
+nav.breadcrumb-button.span3 {
+    float: right;
+}
+
+/* Hack - flip content and aside blocks in RTL mode */
+aside#block-region-side-pre {
+    float: left;
+    margin-right: 2%;
+    margin-left: 0;
+}
+
+div#content {
+    float: right;
+}
+
+div#main-and-pre {
+    float: left;
+    margin-left: 0;
+    margin-right: 2%;
+}
+
+/* Social icons fix , as it was moved from #page-header */
+#page-footer .btn-icon {
+    display: none;
+    padding: 7px 10px;
+    position: absolute;
+    top: 56px;
+    background-image: none;
+    background-color: #ededed;
+}
+
+#page-footer #essentialicons {
+    overflow: visible;
+    background-image: none;
+    float: right;
+}
+
+.block_navigation .block_tree ul,
+.block_settings .block_tree ul {
+    margin-left: 10px;
+}
+
+/* Fix page header */
+#page-header {
+    margin-top: 0 !important;
+    min-height: 40px !important;
+}
+
+/* Shenkar special logo - top navbar */
+.brand {
+    background: url([[pix:theme|shenkar/logo-small-transparent]]);
+    width: 50px;
+    padding: 15px 10px !important;
+    margin-top: 5px;
+    height: 5px !important;
+    background-size: 70px 35px !important;
+}
+
+/* Fix course edit mode on mobile devices */
+@media (max-width: 767px) {
+    aside#block-region-side-post {
+        display: inline-block;
+    }
+}
