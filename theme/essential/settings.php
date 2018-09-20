@@ -328,8 +328,45 @@ if ($ADMIN->fulltree) {
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $opactitychoices);
     $essentialsettingsfeature->add($setting);
 
-    $essentialsettingsfeature->add($essentialreadme);
-    $essentialsettingsfeature->add($essentialadvert);
+   // $essentialsettingsfeature->add($essentialreadme);
+   // $essentialsettingsfeature->add($essentialadvert);
+	        // Filtered courselist setting (custom plugin)
+        //$categories = make_categories_options();
+        $essentialsettingsfeature->add(new admin_setting_heading('theme_essential_filtercourses', get_string('filtercourses', 'theme_essential'),
+            get_string('filtercourses_desc', 'theme_essential')));
+         if (file_exists($CFG->libdir. '/coursecatlib.php') ) {
+            require_once($CFG->libdir. '/coursecatlib.php');
+            $categories = coursecat::make_categories_list();
+            $categories['-1'] = get_string('navshowallcourses','theme_essential');
+            //$frontpage = $ADMIN->locate('frontpage');
+            $essentialsettingsfeature->add(new admin_setting_configselect('defaultcoursecategroy',
+                get_string('defaultcoursecategroy', 'theme_essential'),
+                get_string('defaultcoursecategroydescription', 'theme_essential'), '-1', $categories));
+            $essentialsettingsfeature->add(new admin_setting_configcheckbox('showonlytopcategories',
+                get_string('showonlytopcategories', 'theme_essential'),
+                get_string('showonlytopcategoriesdescription', 'theme_essential'), 0));
+            $essentialsettingsfeature->add(new admin_setting_configcheckbox('sortcoursesbylastaccess',
+                get_string('sortcoursesbylastaccess', 'theme_essential'),
+                get_string('sortcoursesbylastaccessdescription', 'theme_essential'), 0));
+            $essentialsettingsfeature->add(new admin_setting_configtext('filtercoursebyfieldname',
+                get_string('filtercoursebyfieldname_label', 'theme_essential'),
+                get_string('filtercoursebyfieldname_desc', 'theme_essential'),
+                'shortname'));
+            $essentialsettingsfeature->add(new admin_setting_configtextarea('filtercoursebyfieldnamedata',
+                get_string('filtercoursebyfieldnamedata_label', 'theme_essential'),
+                get_string('filtercoursebyfieldnamedata_desc', 'theme_essential'),
+                'תשעה_א,תשעה - סמסטר א'));
+            $essentialsettingsfeature->add(new admin_setting_configtext('filtercoursebyfieldnamedefault',
+                get_string('filtercoursebyfieldname_label', 'theme_essential'),
+                get_string('filtercoursebyfieldname_desc', 'theme_essential'),
+                'shortname'));
+             //$ADMIN->add('frontpage', $temp);
+        }
+         //$essentialsettingsfeature->add(new admin_setting_heading('theme_essential_featurereadme',
+        //get_string('readme_title', 'theme_essential'), get_string('readme_desc', 'theme_essential', array('url' => $readme))));
+        $essentialsettingsfeature->add($essentialreadme);
+        $essentialsettingsfeature->add($essentialadvert);
+
 }
 $ADMIN->add('theme_essential', $essentialsettingsfeature);
 
