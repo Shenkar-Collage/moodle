@@ -28,6 +28,21 @@
 defined('MOODLE_INTERNAL') || die;
 
 require_once(\theme_essential\toolbox::get_tile_file('pagesettings'));
+// Get topmost user's role for this page (context)
+// And add a user's role class to body classes.
+$userrole = ' role-teacher';
+$isstudent = false;
+$userroles = get_user_roles($PAGE->context, $USER->id, true);
+foreach ($userroles as $role) {
+    if ($role->roleid == 5) $isstudent = true;
+}
+if ($isstudent) {
+    $userrole = ' role-student';
+}
+if (has_capability('moodle/site:config', context_system::instance())) {
+    $userrole = ' role-admin';
+}
+array_push($bodyclasses, $userrole);
 
 echo $OUTPUT->doctype();
 ?>
