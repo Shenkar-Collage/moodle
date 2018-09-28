@@ -28,6 +28,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 require_once(\theme_essential\toolbox::get_tile_file('pagesettings'));
+
 // Get topmost user's role for this page (context)
 // And add a user's role class to body classes.
 $userrole = ' role-teacher';
@@ -43,7 +44,7 @@ if (has_capability('moodle/site:config', context_system::instance())) {
     $userrole = ' role-admin';
 }
 array_push($bodyclasses, $userrole);
-
+ 
 echo $OUTPUT->doctype();
 ?>
 <html <?php echo $OUTPUT->htmlattributes(); ?> class="no-js">
@@ -58,6 +59,9 @@ echo $OUTPUT->doctype();
     <?php require_once(\theme_essential\toolbox::get_tile_file('fonts')); ?>
     <!-- iOS Homescreen Icons -->
     <?php require_once(\theme_essential\toolbox::get_tile_file('iosicons')); ?>
+    <!-- Start Analytics -->
+    <?php require_once(\theme_essential\toolbox::get_tile_file('analytics')); ?>
+    <!-- End Analytics -->
 </head>
 
 <body <?php echo $OUTPUT->body_attributes($bodyclasses); ?>>
@@ -92,69 +96,14 @@ if (!$haslogo) {
         echo '</a>';
     }
 } else {
-    $home = get_string('home');
     echo '<div class="pull-left logo-container">';
-    echo '<a class="logo" href="'.preg_replace("(https?:)", "", $CFG->wwwroot).'" title="'.$home.'">';
-    echo '<img src="'.\theme_essential\toolbox::get_setting('logo', 'format_file_url').'" class="img-responsive" alt="'.$home.'" />';
+    echo '<a class="logo" href="'.preg_replace("(https?:)", "", $CFG->wwwroot).'" title="'.get_string('home').'">';
+    echo '<img src="'.\theme_essential\toolbox::get_setting('logo', 'format_file_url').'" class="img-responsive" />';
     echo '</a>';
 }
 ?>
                 </div>
-                <?php if ($hassocialnetworks || $hasmobileapps) { ?>
-                <a class="btn btn-icon collapsed" data-toggle="collapse" data-target="#essentialicons">
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </a>
-
-                <div id='essentialicons' class="collapse pull-right">
-<?php
-}
-// If true, displays the heading and available social links; displays nothing if false.
-if ($hassocialnetworks) {
-?>
-                        <div class="pull-right" id="socialnetworks">
-                            <p class="socialheading"><?php echo get_string('socialnetworks', 'theme_essential') ?></p>
-                            <ul class="socials unstyled">
-                                <?php
-                                echo $OUTPUT->render_social_network('googleplus');
-                                echo $OUTPUT->render_social_network('twitter');
-                                echo $OUTPUT->render_social_network('facebook');
-                                echo $OUTPUT->render_social_network('linkedin');
-                                echo $OUTPUT->render_social_network('youtube');
-                                echo $OUTPUT->render_social_network('flickr');
-                                echo $OUTPUT->render_social_network('pinterest');
-                                echo $OUTPUT->render_social_network('instagram');
-                                echo $OUTPUT->render_social_network('vk');
-                                echo $OUTPUT->render_social_network('skype');
-                                echo $OUTPUT->render_social_network('website');
-                                ?>
-                            </ul>
-                        </div>
-                    <?php
-}
-                    // If true, displays the heading and available social links; displays nothing if false.
-if ($hasmobileapps) { ?>
-                        <div class="pull-right" id="mobileapps">
-                            <p class="socialheading"><?php echo get_string('mobileappsheading', 'theme_essential') ?></p>
-                            <ul class="socials unstyled">
-                                <?php
-                                echo $OUTPUT->render_social_network('ios');
-                                echo $OUTPUT->render_social_network('android');
-                                echo $OUTPUT->render_social_network('winphone');
-                                echo $OUTPUT->render_social_network('windows');
-                                ?>
-                            </ul>
-                        </div>
-                    <?php
-}
-if ($hassocialnetworks || $hasmobileapps) {
-?>
-                </div>
-<?php
-}
-?>
+            <!-- Was social links, mov to footer (nadavkav) -->
             </div>
         </div>
     </div>

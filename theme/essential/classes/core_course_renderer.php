@@ -27,13 +27,188 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+include_once("course_filter_form.php");
+
+define ('SORTCOURSESBY_ABC', 0);
+define ('SORTCOURSESBY_LASTACCESS', 1);
+
 class theme_essential_core_course_renderer extends core_course_renderer {
     protected $enablecategoryicon;
 
     public function __construct(moodle_page $page, $target) {
         parent::__construct($page, $target);
-
+        static $theme;
+        if (empty($theme)) {
+            $theme = theme_config::load('essential');
+        }
         $this->enablecategoryicon = \theme_essential\toolbox::get_setting('enablecategoryicon');
+    }
+
+    /**
+     * Returns HTML to print list of courses user is enrolled to for the frontpage
+     *
+     * Also lists remote courses or remote hosts if MNET authorisation is used
+     *
+     * @return string
+     */
+    public function frontpage_my_courses() {
+        global $USER, $CFG, $DB;
+
+        if (!isloggedin() or isguestuser()) {
+            return '';
+        }
+
+        if (!empty($CFG->navsortmycoursessort)) {
+            // sort courses the same as in navigation menu
+            $sortorder = 'visible DESC,'. $CFG->navsortmycoursessort.' ASC';
+        } else {
+            $sortorder = 'visible DESC,sortorder ASC';
+        }
+        $courses  = enrol_get_my_courses('summary, summaryformat', $sortorder);
+
+        //list($categories, $childrencats, $roles, $filterbycategory, $filterbyrole, $filterbysemester, $html) = filter_courses_form();
+        list($filterbyextendedcoursename, $filterbyrole, $html) = filter_courses_form();
+
+        // Initiate semester list keys.
+        $semesterlistkeys = array('-1'=>get_string('all'));
+        foreach (explode(',',get_string('semesterlistkeys','theme_essential')) as $semesterkey) {
+            $semesterlistkeys[] = $semesterkey;
+        }
+
+        // Remove courses which are not chosen by Category / Role / Semester
+        foreach ($courses as $key => $course) {
+            $course->context = context_course::instance($course->id, MUST_EXIST);
+            if ($filterbyrole > 0 && !user_has_role_assignment($USER->id, $filterbyrole, $course->context->id)){
+                //continue;
+                unset($courses[$key]);
+            }
+//                if ($filterbycategory > 0) {
+//                    if (isset($CFG->showonlytopcategories)) {  //Show courses from his category and all children categories
+//                        if (!array_key_exists($course->category, $childrencats) && $course->category != $filterbycategory) {
+//                            //continue;   //Course id not in category or in child category
+//                            unset($courses[$key]);
+//                        }
+//                    } else {   //Show only courses in THIS category
+//                        if ($course->category != $filterbycategory) {
+//                            //continue;
+//                            unset($courses[$key]);
+//                        }
+//                    }
+//                }
+
+//                list($course_year, $course_semester ,$course_code, $course_groupcode) = explode('_', $course->idnumber.'____');
+//                if ( $filterbysemester >= 0 and $course_semester != $semesterlistkeys[$filterbysemester] ) {
+//                    unset($courses[$key]);
+//                }
+            if (!empty($filterbyextendedcoursename) &&
+                mb_strpos($course->shortname, $filterbyextendedcoursename) === false) {
+                unset($courses[$key]);
+            }
+        }
+
+        // Start of sort buttons
+        $sortcoursesby = optional_param('sortcoursesby', SORTCOURSESBY_LASTACCESS, PARAM_INT);
+        $selectedsort_abc = '';
+        $selectedsort_lastaccess = '';
+        switch ($sortcoursesby) {
+            case SORTCOURSESBY_ABC:
+                // Sort by course fullname
+                usort($courses, function($a, $b) { return strcmp($a->fullname, $b->fullname); });
+                $selectedsort_abc = 'selected';
+
+                break;
+            case SORTCOURSESBY_LASTACCESS:
+                // Sort by user's lastaccess to course
+                //usort($courses, function($a, $b) { return $a->lastaccess - $b->lastaccess; });
+
+                //default:
+                global $DB;
+                $lastaccesscourses = $DB->get_records('user_lastaccess', array('userid'=>$USER->id), 'timeaccess DESC');
+                //if ($USER->id == 5151) print_object($lastaccesscourses);
+                foreach ($lastaccesscourses as $c) {
+                    if (isset($courses[$c->courseid])) {
+                        $courses[$c->courseid]->lastaccess = $c->timeaccess;
+                    }
+                }
+                // Sort by user's lastaccess to course
+                usort($courses, function($a, $b) { return $b->lastaccess - $a->lastaccess; });
+                $selectedsort_lastaccess = 'selected';
+
+        }
+
+        //$filterbycategory = optional_param('filterByCategory', $CFG->defaultcoursecategroy, PARAM_INT);
+        //$filterbyrole = optional_param('filterByRole', -1, PARAM_INT);
+        //$filterbysemester = optional_param('filterBySemester', -1, PARAM_INT);
+        $formfilterparams = array(
+            //'filterByCategory'=>$filterbycategory,
+            'filterByRole'=> $filterbyrole,
+            //'filterBySemester'=> $filterbysemester);
+            'filterByExtendedCourseName'=> $filterbyextendedcoursename);
+        $html .= html_writer::start_div('row-fluid');
+        $sortcoursesurl = new moodle_url('/index.php?redirect=0', array_merge($formfilterparams, array('sortcoursesby' => SORTCOURSESBY_LASTACCESS)));
+        $sortcoursesurlhtml = html_writer::link($sortcoursesurl, get_string('sortbylastaccess', 'theme_essential'), array('class' => 'btn '.$selectedsort_lastaccess));
+        $html .= html_writer::tag('div', $sortcoursesurlhtml, array('class' => 'sortbylastaccess buttonz span6'));
+
+        $sortcoursesurl = new moodle_url('/index.php?redirect=0', array_merge($formfilterparams, array('sortcoursesby' => SORTCOURSESBY_ABC)));
+        $sortcoursesurlhtml = html_writer::link($sortcoursesurl, get_string('sortbyabc', 'theme_essential'), array('class' => 'btn '.$selectedsort_abc));
+        $html .= html_writer::tag('div', $sortcoursesurlhtml, array('class' => 'sortbyabc buttonz span6'));
+        $html .= html_writer::end_div();
+
+        $html .= html_writer::tag('hr', '',array('style'=>'clear:both;'));
+
+        /////////////////////////////// End of special filter code (more or less ;-)
+
+        //$output = '';
+        $output = $html;
+
+        $rhosts   = array();
+        $rcourses = array();
+        if (!empty($CFG->mnet_dispatcher_mode) && $CFG->mnet_dispatcher_mode==='strict') {
+            $rcourses = get_my_remotecourses($USER->id);
+            $rhosts   = get_my_remotehosts();
+        }
+
+        if (!empty($courses) || !empty($rcourses) || !empty($rhosts)) {
+
+            $chelper = new coursecat_helper();
+            if (count($courses) > $CFG->frontpagecourselimit) {
+                // There are more enrolled courses than we can display, display link to 'My courses'.
+                $totalcount = count($courses);
+                $courses = array_slice($courses, 0, $CFG->frontpagecourselimit, true);
+                $chelper->set_courses_display_options(array(
+                    'viewmoreurl' => new moodle_url('/my/'),
+                    'viewmoretext' => new lang_string('mycourses')
+                ));
+            } else {
+                // All enrolled courses are displayed, display link to 'All courses' if there are more courses in system.
+                $chelper->set_courses_display_options(array(
+                    'viewmoreurl' => new moodle_url('/course/index.php'),
+                    'viewmoretext' => new lang_string('fulllistofcourses')
+                ));
+                $totalcount = $DB->count_records('course') - 1;
+            }
+            $chelper->set_show_courses(self::COURSECAT_SHOW_COURSES_EXPANDED)->
+            set_attributes(array('class' => 'frontpage-course-list-enrolled'));
+            $output .= $this->coursecat_courses($chelper, $courses, $totalcount);
+
+            // MNET
+            if (!empty($rcourses)) {
+                // at the IDP, we know of all the remote courses
+                $output .= html_writer::start_tag('div', array('class' => 'courses'));
+                foreach ($rcourses as $course) {
+                    $output .= $this->frontpage_remote_course($course);
+                }
+                $output .= html_writer::end_tag('div'); // .courses
+            } elseif (!empty($rhosts)) {
+                // non-IDP, we know of all the remote servers, but not courses
+                $output .= html_writer::start_tag('div', array('class' => 'courses'));
+                foreach ($rhosts as $host) {
+                    $output .= $this->frontpage_remote_host($host);
+                }
+                $output .= html_writer::end_tag('div'); // .courses
+            }
+        }
+        return $output;
     }
 
     /**
@@ -124,7 +299,7 @@ class theme_essential_core_course_renderer extends core_course_renderer {
             $categoryrepresentation .= html_writer::empty_tag('img', array('src' => $image, 'class' => 'img-responsive'));
             $categoryrepresentation .= html_writer::end_tag('div');
         } else if (!empty($icon)) {
-            $categoryrepresentation = \theme_essential\toolbox::getfontawesomemarkup($icon);
+            $categoryrepresentation = html_writer::tag('span', '', array('aria-hidden' => 'true', 'class' => 'fa fa-'.$icon));
         } else {
             $categoryrepresentation = '';
         }
@@ -245,7 +420,7 @@ class theme_essential_core_course_renderer extends core_course_renderer {
             }
             foreach ($course->get_course_contacts() as $userid => $coursecontact) {
                 $faiconsetting = \theme_essential\toolbox::get_setting('courselistteachericon');
-                $faiconsettinghtml = (empty($faiconsetting)) ? '' : '<span aria-hidden="true" class="'.
+                $faiconsettinghtml = (empty($faiconsetting)) ? '' : '<span aria-hidden="true" class="fa fa-'.
                     $faiconsetting.'"></span> ';
                 $name = $faiconsettinghtml.$coursecontact['rolename'].': '.
                         html_writer::link(new moodle_url('/user/view.php',
@@ -310,65 +485,53 @@ class theme_essential_core_course_renderer extends core_course_renderer {
             $courses[$remoteid] = $val;
         }
 
-        if (empty($courses)) {
-            return $data;
-        }
-
-        $courseitemsearchtype = \get_user_preferences('theme_essential_courseitemsearchtype');
-        $sesskey = sesskey();
         foreach ($courses as $course) {
-            if (!$courseitemsearchtype) {
-                $label = $course->fullname;
-                if (stristr($label, $term)) {
-                    $courseurl = new moodle_url('/course/view.php', array('id' => $course->id, 'sesskey' => $sesskey));
-                    $data[] = array('id' => $courseurl->out(false), 'label' => $label, 'value' => $label);
-                }
-            } else {
-                $modinfo = get_fast_modinfo($course);
-                $courseformat = course_get_format($course->id);
-                $course = $courseformat->get_course();
-                $courseformatsettings = $courseformat->get_format_options();
-                $coursenumsections = $courseformat->get_last_section_number();
+            $modinfo = get_fast_modinfo($course);
+            $courseformat = course_get_format($course->id);
+            $course = $courseformat->get_course();
+            $courseformatsettings = $courseformat->get_format_options();
+            $sesskey = sesskey();
 
-                foreach ($modinfo->get_section_info_all() as $section => $thissection) {
-                    if (!$thissection->uservisible) {
-                        continue;
-                    }
-                    if (is_object($thissection)) {
-                        $thissection = $modinfo->get_section_info($thissection->section);
+            foreach ($modinfo->get_section_info_all() as $section => $thissection) {
+                if (!$thissection->uservisible) {
+                    continue;
+                }
+                if (is_object($thissection)) {
+                    $thissection = $modinfo->get_section_info($thissection->section);
+                } else {
+                    $thissection = $modinfo->get_section_info($thissection);
+                }
+                if ((string) $thissection->name !== '') {
+                    $sectionname = format_string($thissection->name, true,
+                        array('context' => context_course::instance($course->id)));
+                } else {
+                    $sectionname = $courseformat->get_section_name($thissection->section);
+                }
+                if ($thissection->section <= $course->numsections) {
+                    // Do not link 'orphaned' sections.
+                    $courseurl = new moodle_url('/course/view.php');
+                    $courseurl->param('id', $course->id);
+                    $courseurl->param('sesskey', $sesskey);
+                    if ((!empty($courseformatsettings['coursedisplay'])) &&
+                        ($courseformatsettings['coursedisplay'] == COURSE_DISPLAY_MULTIPAGE)) {
+                        $courseurl->param('section', $thissection->section);
+                        $coursehref = $courseurl->out(false);
                     } else {
-                        $thissection = $modinfo->get_section_info($thissection);
+                        $coursehref = $courseurl->out(false).'#section-'.$thissection->section;
                     }
-                    if ((string) $thissection->name !== '') {
-                        $sectionname = format_string($thissection->name, true,
-                            array('context' => context_course::instance($course->id)));
-                    } else {
-                        $sectionname = $courseformat->get_section_name($thissection->section);
+                    $label = $course->fullname.' - '.$sectionname;
+                    if (stristr($label, $term)) {
+                        $data[] = array('id' => $coursehref, 'label' => $label, 'value' => $label);
                     }
-                    if ($thissection->section <= $coursenumsections) {
-                        // Do not link 'orphaned' sections.
-                        $courseurl = new moodle_url('/course/view.php', array('id' => $course->id, 'sesskey' => $sesskey));
-                        if ((!empty($courseformatsettings['coursedisplay'])) &&
-                            ($courseformatsettings['coursedisplay'] == COURSE_DISPLAY_MULTIPAGE)) {
-                            $courseurl->param('section', $thissection->section);
-                            $coursehref = $courseurl->out(false);
-                        } else {
-                            $coursehref = $courseurl->out(false).'#section-'.$thissection->section;
-                        }
-                        $label = $course->fullname.' - '.$sectionname;
-                        if (stristr($label, $term)) {
-                            $data[] = array('id' => $coursehref, 'label' => $label, 'value' => $label);
-                        }
-                    }
-                    if (!empty($modinfo->sections[$thissection->section])) {
-                        foreach ($modinfo->sections[$thissection->section] as $modnumber) {
-                            $mod = $modinfo->cms[$modnumber];
-                            if (!empty($mod->url)) {
-                                $instancename = $mod->get_formatted_name();
-                                $label = $course->fullname.' - '.$sectionname.' - '.$instancename;
-                                if (stristr($label, $term)) {
-                                    $data[] = array('id' => $mod->url->out(false), 'label' => $label, 'value' => $label);
-                                }
+                }
+                if (!empty($modinfo->sections[$thissection->section])) {
+                    foreach ($modinfo->sections[$thissection->section] as $modnumber) {
+                        $mod = $modinfo->cms[$modnumber];
+                        if (!empty($mod->url)) {
+                            $instancename = $mod->get_formatted_name();
+                            $label = $course->fullname.' - '.$sectionname.' - '.$instancename;
+                            if (stristr($label, $term)) {
+                                $data[] = array('id' => $mod->url->out(false), 'label' => $label, 'value' => $label);
                             }
                         }
                     }

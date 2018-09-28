@@ -865,6 +865,29 @@ $string['ipadicondesc'] = 'Icon should be a PNG files sized 72px by 72px.';
 $string['ipadretinaicon'] = 'iPad Icon (Retina)';
 $string['ipadretinaicondesc'] = 'Icon should be a PNG files sized 144px by 144px.';
 
+// Analytics.
+$string['analytics'] = 'Analytics';
+$string['analyticsheadingsub'] = 'Powerful analytics for Moodle';
+$string['analyticsdesc'] = 'Choose the type of analytics you want to insert and save to enable the other options.';
+$string['analyticssiteid'] = 'Site ID';
+$string['analyticssiteiddesc'] = 'Enter your Site ID';
+$string['analyticstrackingid'] = 'Site ID';
+$string['analyticstrackingiddesc'] = 'Enter your Tracking ID';
+$string['analyticssiteurl'] = 'Analytics URL';
+$string['analyticssiteurldesc'] = 'Enter your "Piwik Analytics" URL without http(s) or a trailing slash.  For example "mysite.com/analytics".';
+$string['analyticsenabled'] = 'Enabled';
+$string['analyticsenableddesc'] = 'Enable analytics for Moodle';
+$string['analyticsimagetrack'] = 'Image tracking';
+$string['analyticscleanurl'] = 'Clean URLs';
+$string['analyticscleanurldesc'] = 'Generate clean URL for in advanced tracking';
+$string['analyticsimagetrackdesc'] = 'Enable Image Tracking for browsers with JavaScript disabled.';
+$string['analyticstrackadmin'] = 'Tracking Admins';
+$string['analyticstrackadmindesc'] = 'Enable tracking of Admin users (not recommended)';
+$string['analyticsuseuserid'] = 'User ID';
+$string['analyticsuseuseriddesc'] = 'Enable use of User ID in tracking.';
+$string['analyticspiwik'] = 'Piwik';
+$string['analyticsguniversal'] = 'Google Universal Analytics';
+
 // Properties.
 $string['properties'] = 'Properties';
 $string['propertiessub'] = 'The properties';
@@ -933,20 +956,13 @@ $string['badgepreferences'] = 'Badge';
 // Incourse.
 $string['returntosection'] = 'Return to: {$a->section}';
 
-// Course fullname and course content search.
-$string['findcoursecontent'] = 'Course search: ';
-$string['searchallcoursecontent'] = 'Search all course content';
-$string['searchallcoursecontentdefault'] = 'Default search all course content';
-$string['searchallcoursecontentdefaultdesc'] = 'Sets the value of the \'Search all course content\' checkbox on the course content search.  If \'Search all course content\' is unticked, then only the course fullname is searched for a match.';
+// Course content search.
+$string['findcoursecontent'] = 'Course content: ';
 
 // essential_admin_setting_configinteger.
 $string['asconfigintlower'] = '{$a->value} is less than the lower range limit of {$a->lower}';
 $string['asconfigintupper'] = '{$a->value} is greater than the upper range limit of {$a->upper}';
 $string['asconfigintnan'] = '{$a->value} is not a number';
-
-// Privacy.
-$string['privacy:metadata:preference:courseitemsearchtype'] = 'The users choice of course search (\'course fullname\' - \'0\' or all course content - \'1\') if ever stored when \'coursecontentsearch\' was ticked.  If nothing stated then either the course search is off or the user has never viewed the dsahboard it when it was on.';
-$string['privacy:request:preference:courseitemsearchtype'] = 'The user has chosen "{$a->value}" for the course search user preference "{$a->name}" where \'0\' is the \'course fullname only\' and \'1\' is \'all course content\'.';
 
 /// Renderer - course filter
 $string['showallcourses'] = 'Show all courses';

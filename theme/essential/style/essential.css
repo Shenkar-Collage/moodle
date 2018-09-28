@@ -3375,14 +3375,14 @@ img.iconsmall {
   margin-right: 0.5rem;
 }
 .path-calendar .maincalendar .eventlist .event .name,
-.path-calendar .maincalendar .eventlist .event .action {
+.path-calendar .maincalendar .eventlist .event .course {
   margin-bottom: 5px;
 }
 .path-calendar .maincalendar .eventlist .event .date {
   float: right;
 }
-.path-calendar .maincalendar .eventlist .event .subscription,
-.path-calendar .maincalendar .eventlist .event .action {
+.path-calendar .maincalendar .eventlist .event .course,
+.path-calendar .maincalendar .eventlist .event .subscription {
   float: left;
   clear: left;
 }
@@ -3645,7 +3645,6 @@ img.iconsmall {
 .editing_hide + .editing_assign {
   margin-left: 20px;
 }
-.section_action_menu,
 .section .activity .commands {
   white-space: nowrap;
   display: inline;
@@ -6932,12 +6931,6 @@ body.path-question-type .fitem_fgroup .accesshide {
 .formulation select {
   width: auto;
   vertical-align: baseline;
-}
-.que.multianswer .formulation .yui3-widget-positioned .feedbackspan {
-  box-sizing: content-box;
-  padding-bottom: 0;
-  max-width: inherit;
-  width: inherit;
 }
 .path-mod-quiz input[size] {
   width: auto;
@@ -12613,7 +12606,6 @@ input[type="submit"].btn.btn-mini {
 .popover {
   position: absolute;
   top: 0;
-  /*rtl:ignore*/
   left: 0;
   z-index: 1010;
   display: none;
@@ -14248,12 +14240,6 @@ form {
 .singleselect label {
   margin-right: .3em;
 }
-.custom-select {
-  max-width: 100%;
-}
-.custom-select + input[type="submit"] {
-  margin: 0 0 0 5px;
-}
 #portfolio-add-button {
   display: inline;
 }
@@ -14709,9 +14695,6 @@ body.modal-open {
   border-radius: 10px;
   border: none;
 }
-.modal-container .modal.modal-lg {
-  max-width: 900px;
-}
 .modal-container .modal .modal-header {
   min-height: 13px;
   padding: 5px;
@@ -14763,19 +14746,6 @@ body.modal-open {
 .modal-container .modal .modal-body {
   max-height: none;
 }
-.modal-container .modal .modal-body > .loading-icon {
-  display: block;
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.modal-container .modal .modal-body > .loading-icon .icon {
-  position: absolute;
-  top: 50%;
-  /*rtl:ignore*/
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
 .modal-container .modal .modal-footer {
   border-top: 1px solid #bbb;
   text-align: center;
@@ -14783,6 +14753,9 @@ body.modal-open {
   background-color: #f2f2f2;
   box-shadow: none;
   border-radius: 0 0 10px 10px;
+}
+.modal-container.large .modal {
+  max-width: 900px;
 }
 .modal-backdrop {
   z-index: 4049;
@@ -15046,9 +15019,6 @@ div#dock {
   float: left;
   padding-right: 1em;
 }
-.path-mod-choice .horizontal .choices .option {
-  display: inline-block;
-}
 .path-mod-lesson .firstpageoptions {
   margin: auto;
   min-width: 280px;
@@ -15160,18 +15130,11 @@ div#dock {
 .path-mod-lesson .answeroptiongroup .felement label p:last-child {
   margin-bottom: 0;
 }
-.path-mod-lesson .answeroption .fradio label p,
-.path-mod-lesson .answeroption .fcheckbox label p {
-  display: inline;
-}
 /**
  * Style for view.php
  **/
 #page-mod-lesson-view .password-form .submitbutton {
   display: inline;
-}
-#page-mod-lesson-view .branchbuttoncontainer .singlebutton input[type="submit"] {
-  white-space: normal;
 }
 .path-mod-lesson .reviewessay {
   width: 40%;
@@ -15478,11 +15441,6 @@ div#dock {
   width: inherit;
   height: inherit;
 }
-#page-mod-quiz-edit ul.slots li.section li.activity .instancemaxmarkcontainer form input {
-  margin: 0;
-  padding: 0.2em;
-  height: 1em;
-}
 .path-mod-quiz #mod_quiz_navblock .qnbutton {
   text-decoration: none;
   font-size: 14px;
@@ -15564,9 +15522,6 @@ div#dock {
 }
 .path-mod-scorm.jsenabled .scorm-center {
   display: block;
-}
-.path-mod-scorm #region-main #intro {
-  width: auto;
 }
 .yui-skin-sam .yui-layout.path-mod-chat-gui_ajax {
   background-color: #fff;
@@ -19571,35 +19526,6 @@ a.muted:focus {
   color: inherit;
   font-style: italic;
 }
-.text-warning {
-  color: #8a6d3b !important;
-}
-a.text-warning:hover,
-a.text-warning:focus {
-  color: #66512c !important;
-}
-.text-error,
-.text-danger {
-  color: #b94a48 !important;
-}
-a.text-error:hover,
-a.text-error:focus {
-  color: #953b39 !important;
-}
-.text-info {
-  color: #3a87ad !important;
-}
-a.text-info:hover,
-a.text-info:focus {
-  color: #2d6987 !important;
-}
-.text-success {
-  color: #468847 !important;
-}
-a.text-success:hover,
-a.text-success:focus {
-  color: #356635 !important;
-}
 /* Moodle fixes begin */
 /* Moodle fixes blocks begin */
 .block .icon {
@@ -19705,16 +19631,6 @@ span:first-of-type > .icon {
   background-color: inherit;
 }
 /* Moodle fixes mod-assign end */
-/* Moodle fixes mod-quiz begin */
-#page-mod-quiz-attempt .submitbtns,
-#page-mod-quiz-review .submitbtns {
-  text-align: right;
-}
-#page-mod-quiz-attempt .submitbtns .mod_quiz-next-nav,
-#page-mod-quiz-review .submitbtns .mod_quiz-next-nav {
-  float: none;
-}
-/* Moodle fixes mod-quiz end */
 /* Moodle fixes search begin */
 .navbar .search-input-wrapper {
   width: 18px;
@@ -20076,10 +19992,6 @@ table.ygtvtable td a {
   top: 0;
   left: 0;
 }
-.courseitemsearch #courseitemsearchtype {
-  margin-bottom: 0;
-  margin-left: 4px;
-}
 /* @end */
 /* @group Blocks */
 .block {
@@ -20208,12 +20120,12 @@ p.tree_item.leaf a.action-delete > .fa {
 .block_navigation.block li.type_unknown.depth_1 > .tree_item.branch:before {
   content: "\f015";
 }
-.block_navigation .block_tree .tree_item.branch,
-.block_settings .block_tree .tree_item.branch {
+.block_navigation.block .block_tree .tree_item.branch,
+.block_settings.block .block_tree .tree_item.branch {
   padding-left: 0;
 }
-.block_navigation .block_tree .tree_item.hasicon .item-content-wrap,
-.block_settings .block_tree .tree_item.hasicon .item-content-wrap {
+.block_navigation.block .block_tree .tree_item.hasicon .item-content-wrap,
+.block_settings.block .block_tree .tree_item.hasicon .item-content-wrap {
   display: inline !important;
 }
 .block.block_flat_navigation {
@@ -22060,6 +21972,11 @@ body.path-admin-setting #page-footer {
 /* @end */
 /* @end */
 /* @group Forms */
+fieldset textarea[cols],
+fieldset input[size] {
+  width: 65.95744681%;
+  *width: 65.90425532%;
+}
 body#page-admin-setting-messageinbound_mailsettings fieldset select {
   width: 65.95744681%;
   *width: 65.90425532%;
@@ -22105,6 +22022,13 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
   font-size: 1em;
   font-family: monospace;
 }
+#region-main form .form-buttons {
+  width: 400px;
+  border-radius: 8px;
+}
+#region-main form .form-buttons input {
+  margin: 0;
+}
 #region-main form table#form td.submit,
 #region-main form .form-buttons,
 #region-main form .path-admin .buttons,
@@ -22112,12 +22036,13 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
 #region-main form .fp-content-center form + div,
 #region-main form div.backup-section + form,
 #region-main form #fgroup_id_buttonar {
-  border-radius: 4px;
+  width: 30%;
+  text-align: center;
   margin-left: auto;
   margin-right: auto;
-  padding: 10px 10px 0 5px;
-  text-align: center;
   z-index: 101;
+  padding: 10px;
+  border-radius: 4px;
 }
 #region-main form table#form td.submit .felement,
 #region-main form .form-buttons .felement,
@@ -22137,6 +22062,7 @@ body#page-admin-setting-messageinbound_mailsettings fieldset select {
 #region-main form div.backup-section + form > .fgroup,
 #region-main form #fgroup_id_buttonar > .fgroup {
   margin: 0;
+  padding-top: 15px;
 }
 #region-main form table#form td.submit input[type=submit],
 #region-main form .form-buttons input[type=submit],
@@ -23331,14 +23257,6 @@ body.format-topcoll .course-content ul.ctopics li.section .content .toggle a h3:
 }
 .nav-tabs > li > a {
   border: 1px solid #eee;
-}
-/* @end */
-/* @group User */
-#groupeditform .groups,
-#groupeditform .members {
-  display: inline-block;
-  float: none;
-  vertical-align: top;
 }
 /* @end */
 /* @group Print Styling */

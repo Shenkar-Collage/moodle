@@ -35,9 +35,9 @@ M.util.init_block_hider = function(Y, config) {
                         show.addClass('block-hider-show ' + this.get('iconHidden'));
                         show.setAttrs({
                             'aria-hidden': true,
-                            'aria-label':  config.tooltipHidden,
+                            'aria-label':  config.tooltipVisible,
                             tabIndex:      0,
-                            'title':       config.tooltipHidden
+                            'title':       config.tooltipVisible
                         });
                         show.on('keypress', this.updateStateKey, this, false);
                         show.on('click', this.updateState, this, false);
@@ -67,12 +67,10 @@ M.util.init_block_hider = function(Y, config) {
                     id : {},
                     preference : {},
                     iconVisible : {
-                       // value : 'icon fa fa-minus-square-o fa-fw'
-                       value : 'icon fa fa-minus-square-o fa-fw'
+                        value : 'icon fa fa-minus-square-o fa-fw'
                     },
                     iconHidden : {
-                       // value : 'icon fa fa-plus-square-o fa-fw'
-                       value : 'icon fa fa-plus-square-o fa-fw'
+                        value : 'icon fa fa-plus-square-o fa-fw'
                     },
                     block : {
                         setter : function(node) {

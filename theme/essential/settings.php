@@ -201,14 +201,6 @@ if ($ADMIN->fulltree) {
     $setting->set_updatedcallback('theme_reset_all_caches');
     $essentialsettingsfeature->add($setting);
 
-    // Course content search type default.
-    $name = 'theme_essential/searchallcoursecontentdefault';
-    $title = get_string('searchallcoursecontentdefault', 'theme_essential');
-    $description = get_string('searchallcoursecontentdefaultdesc', 'theme_essential');
-    $default = true;
-    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
-    $essentialsettingsfeature->add($setting);
-
     // Custom scrollbars.
     $name = 'theme_essential/customscrollbars';
     $title = get_string('customscrollbars', 'theme_essential');
@@ -328,13 +320,12 @@ if ($ADMIN->fulltree) {
     $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $opactitychoices);
     $essentialsettingsfeature->add($setting);
 
-   // $essentialsettingsfeature->add($essentialreadme);
-   // $essentialsettingsfeature->add($essentialadvert);
-	        // Filtered courselist setting (custom plugin)
+        // Filtered courselist setting (custom plugin)
         //$categories = make_categories_options();
         $essentialsettingsfeature->add(new admin_setting_heading('theme_essential_filtercourses', get_string('filtercourses', 'theme_essential'),
             get_string('filtercourses_desc', 'theme_essential')));
-         if (file_exists($CFG->libdir. '/coursecatlib.php') ) {
+
+        if (file_exists($CFG->libdir. '/coursecatlib.php') ) {
             require_once($CFG->libdir. '/coursecatlib.php');
             $categories = coursecat::make_categories_list();
             $categories['-1'] = get_string('navshowallcourses','theme_essential');
@@ -360,13 +351,14 @@ if ($ADMIN->fulltree) {
                 get_string('filtercoursebyfieldname_label', 'theme_essential'),
                 get_string('filtercoursebyfieldname_desc', 'theme_essential'),
                 'shortname'));
-             //$ADMIN->add('frontpage', $temp);
+
+            //$ADMIN->add('frontpage', $temp);
         }
-         //$essentialsettingsfeature->add(new admin_setting_heading('theme_essential_featurereadme',
+
+        //$essentialsettingsfeature->add(new admin_setting_heading('theme_essential_featurereadme',
         //get_string('readme_title', 'theme_essential'), get_string('readme_desc', 'theme_essential', array('url' => $readme))));
         $essentialsettingsfeature->add($essentialreadme);
         $essentialsettingsfeature->add($essentialadvert);
-
 }
 $ADMIN->add('theme_essential', $essentialsettingsfeature);
 
@@ -2723,6 +2715,89 @@ if ($ADMIN->fulltree) {
     $essentialsettingscategoryicon->add($essentialadvert);
 }
 $ADMIN->add('theme_essential', $essentialsettingscategoryicon);
+
+// Analytics settings.
+$essentialsettingsanalytics = new admin_settingpage('theme_essential_analytics', get_string('analytics', 'theme_essential'));
+if ($ADMIN->fulltree) {
+    $essentialsettingsanalytics->add(new admin_setting_heading('theme_essential_analytics',
+        get_string('analyticsheadingsub', 'theme_essential'),
+        format_text(get_string('analyticsdesc', 'theme_essential'), FORMAT_MARKDOWN)));
+
+    $name = 'theme_essential/analyticsenabled';
+    $title = get_string('analyticsenabled', 'theme_essential');
+    $description = get_string('analyticsenableddesc', 'theme_essential');
+    $default = true;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $essentialsettingsanalytics->add($setting);
+
+    $name = 'theme_essential/analytics';
+    $title = get_string('analytics', 'theme_essential');
+    $description = get_string('analyticsdesc', 'theme_essential');
+    $guniversal = get_string('analyticsguniversal', 'theme_essential');
+    $piwik = get_string('analyticspiwik', 'theme_essential');
+    $default = 'piwik';
+    $choices = array(
+        'piwik' => $piwik,
+        'guniversal' => $guniversal
+    );
+    $setting = new essential_admin_setting_configselect($name, $title, $description, $default, $choices);
+    $essentialsettingsanalytics->add($setting);
+
+    if (get_config('theme_essential', 'analytics') === 'piwik') {
+        $name = 'theme_essential/analyticssiteid';
+        $title = get_string('analyticssiteid', 'theme_essential');
+        $description = get_string('analyticssiteiddesc', 'theme_essential');
+        $default = '1';
+        $setting = new admin_setting_configtext($name, $title, $description, $default);
+        $essentialsettingsanalytics->add($setting);
+
+        $name = 'theme_essential/analyticsimagetrack';
+        $title = get_string('analyticsimagetrack', 'theme_essential');
+        $description = get_string('analyticsimagetrackdesc', 'theme_essential');
+        $default = true;
+        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+        $essentialsettingsanalytics->add($setting);
+
+        $name = 'theme_essential/analyticssiteurl';
+        $title = get_string('analyticssiteurl', 'theme_essential');
+        $description = get_string('analyticssiteurldesc', 'theme_essential');
+        $default = '';
+        $setting = new admin_setting_configtext($name, $title, $description, $default);
+        $essentialsettingsanalytics->add($setting);
+
+        $name = 'theme_essential/analyticsuseuserid';
+        $title = get_string('analyticsuseuserid', 'theme_essential');
+        $description = get_string('analyticsuseuseriddesc', 'theme_essential');
+        $default = false;
+        $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+        $essentialsettingsanalytics->add($setting);
+    } else if (get_config('theme_essential', 'analytics') === 'guniversal') {
+        $name = 'theme_essential/analyticstrackingid';
+        $title = get_string('analyticstrackingid', 'theme_essential');
+        $description = get_string('analyticstrackingiddesc', 'theme_essential');
+        $default = 'UA-XXXXXXXX-X';
+        $setting = new admin_setting_configtext($name, $title, $description, $default);
+        $essentialsettingsanalytics->add($setting);
+    }
+
+    $name = 'theme_essential/analyticstrackadmin';
+    $title = get_string('analyticstrackadmin', 'theme_essential');
+    $description = get_string('analyticstrackadmindesc', 'theme_essential');
+    $default = false;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $essentialsettingsanalytics->add($setting);
+
+    $name = 'theme_essential/analyticscleanurl';
+    $title = get_string('analyticscleanurl', 'theme_essential');
+    $description = get_string('analyticscleanurldesc', 'theme_essential');
+    $default = true;
+    $setting = new admin_setting_configcheckbox($name, $title, $description, $default, true, false);
+    $essentialsettingsanalytics->add($setting);
+
+    $essentialsettingsanalytics->add($essentialreadme);
+    $essentialsettingsanalytics->add($essentialadvert);
+}
+$ADMIN->add('theme_essential', $essentialsettingsanalytics);
 
 // Properties.
 $essentialsettingsprops = new admin_settingpage('theme_essential_props', get_string('properties', 'theme_essential'));

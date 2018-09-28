@@ -50,6 +50,7 @@ class core_renderer extends \core_renderer {
     use core_renderer_toolbox;
     public $language = null;
     protected $themeconfig;
+    protected $left;
 
     protected $essential = null; // Used for determining if this is a Essential or child of renderer.
 
@@ -62,6 +63,7 @@ class core_renderer extends \core_renderer {
     public function __construct(moodle_page $page, $target) {
         parent::__construct($page, $target);
         $this->themeconfig = array(\theme_config::load('essential'));
+        $this->left = !\right_to_left();
     }
 
     /**
@@ -380,16 +382,6 @@ class core_renderer extends \core_renderer {
                 $content .= '<div><p>'.get_string('findcoursecontent', 'theme_essential').'</p></div>';
                 $content .= '<div id="courseitemsearchresults">';
                 $content .= '<input type="text" name="courseitemsearch" id="courseitemsearch" disabled="disabled">';
-                $content .= '<input type="checkbox" name="courseitemsearchtype" id="courseitemsearchtype" disabled="disabled"';
-                $searchallcoursecontentdefault = 0;
-                if ($this->get_setting('searchallcoursecontentdefault')) {
-                    $searchallcoursecontentdefault = 1;
-                }
-                $courseitemsearchtype = get_user_preferences('theme_essential_courseitemsearchtype', $searchallcoursecontentdefault);
-                if ($courseitemsearchtype) {
-                    $content .= ' checked';
-                }
-                $content .= '><label for="courseitemsearchtype">'.get_string('searchallcoursecontent', 'theme_essential').'</label>';
                 $content .= '</div></div>';
             }
         }
@@ -1262,7 +1254,7 @@ class core_renderer extends \core_renderer {
                         $branch->add($icon.$modfullname, new moodle_url('/course/resources.php',
                             array('id' => $this->page->course->id)));
                     } else {
-                        $icon = $this->pix_icon('icon', '', $modname, array('class' => 'icon'));
+                        $icon = '<img src="'.$this->pix_url('icon', $modname) . '" class="icon" alt="" />';
                         $branch->add($icon.$modfullname, new moodle_url('/mod/'.$modname.'/index.php',
                             array('id' => $this->page->course->id)));
                     }
@@ -2532,7 +2524,7 @@ class core_renderer extends \core_renderer {
         return $html;
     }
 
-    public function getfontawesomemarkup($theicon, $classes = array(), $attributes = array(), $content = '') {
+    protected function getfontawesomemarkup($theicon, $classes = array(), $attributes = array(), $content = '') {
         $classes[] = 'fa fa-'.$theicon;
         $attributes['aria-hidden'] = 'true';
         $attributes['class'] = implode(' ', $classes);

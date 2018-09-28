@@ -31,7 +31,6 @@ $numberofslides = \theme_essential\toolbox::showslider();
 
 if ($numberofslides) {
     $slideinterval  = \theme_essential\toolbox::get_setting('slideinterval');
-    $left = !right_to_left();
     $data = array('data' => array('slideright' => !$left));
     if ($slideinterval) {
         $data['data']['slideinterval'] = $slideinterval;

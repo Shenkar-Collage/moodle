@@ -34,7 +34,7 @@ if ($coursetitleposition == 'above') {
 }
 if ($pagebottomregion) {
     echo '<div id="content" class="span12">';
-} else if ($hasboringlayout) {
+} else if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
     echo '<div id="content" class="span9 pull-right">';
 } else {
     echo '<div id="content" class="span9">';
@@ -54,7 +54,7 @@ if (empty($PAGE->layout_options['nocoursefooter'])) {
 echo '</section>';
 echo '</div>';
 if (!$pagebottomregion) {
-    if ($hasboringlayout) {
+    if ((($hasboringlayout) && ($left)) || ((!$hasboringlayout) && (!$left))) {
         echo $OUTPUT->essential_blocks('side-pre', 'span3 desktop-first-column');
     } else {
         echo $OUTPUT->essential_blocks('side-pre', 'span3');
