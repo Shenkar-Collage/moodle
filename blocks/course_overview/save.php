@@ -23,18 +23,12 @@
  */
 define('AJAX_SCRIPT', true);
 
-require_once(__DIR__ . '/../../config.php');
-require_once(__DIR__ . '/locallib.php');
+require_once(dirname(__FILE__) . '/../../config.php');
+require_once(dirname(__FILE__) . '/locallib.php');
 
 require_sesskey();
 require_login();
 
 $sortorder = required_param_array('sortorder', PARAM_INT);
-$activetab = required_param('tab', PARAM_ALPHA);
 
-if ($activetab == 'courses') {
-    block_course_overview_update_myorder($sortorder);
-    block_course_overview_update_sortorder(0);
-} else if ($activetab == "favourites") {
-    block_course_overview_update_favourites($sortorder);
-}
+block_course_overview_update_myorder($sortorder);
