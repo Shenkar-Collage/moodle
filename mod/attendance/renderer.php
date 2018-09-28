@@ -260,7 +260,7 @@ class mod_attendance_renderer extends plugin_renderer_base {
                 html_writer::checkbox('cb_selector', 0, false, '', array('id' => 'cb_selector'))
             );
         $table->align = array('', 'right', '', '', 'left', 'right', 'center');
-        $table->size = array('1px', '1px', '1px', '', '*', '120px', '1px');
+        $table->size = array('1px', '1px', '1px', '', '*', '150px', '1px');
 
         $i = 0;
         foreach ($sessdata->sessions as $key => $sess) {
@@ -317,6 +317,7 @@ class mod_attendance_renderer extends plugin_renderer_base {
             has_capability('mod/attendance:changeattendances', $sessdata->att->context))) {
 
             $icon = new attendance_password_icon($sess->studentpassword, $sess->id);
+            $actions .= $sess->studentpassword; // nadavkav
             $actions .= $this->render($icon);
         }
 
