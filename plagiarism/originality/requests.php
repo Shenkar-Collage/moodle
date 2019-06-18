@@ -1,5 +1,20 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+// @codingStandardsIgnoreLine
 /*
  * Functionality for various requests.
  *
@@ -7,94 +22,78 @@
  *
  * Type1:  Reprocess and delete requests that were never completely processed.
  *
- *        If there are any records left in plagiarism_originality_req then have a page with the list and buttons to delete and resubmit.
+ *  If there are any records left in plagiarism_originality_req then have a page
+ *  with the list and buttons to delete and resubmit.
  *
  */
+// @codingStandardsIgnoreLine
 require_once(dirname(dirname(__FILE__)) . '/../config.php');
 require_once(dirname(__FILE__) . '/locallib.php');
 
 require_once(dirname(__FILE__) . '/lib.php');
 
-function base64_url_decode($input) {
-    return base64_decode(strtr($input, '-_,', '+/='));
-}
-
-require_once(dirname(dirname(__FILE__)) . '/../config.php');
-require_once(dirname(__FILE__) . '/locallib.php');
-
-//require_login();
+require_once(dirname(__FILE__) . '/version.php');
 
 global $DB, $CFG, $PAGE;
 
-/***********************************************************************
- * INPUT
- * *********************************************************************
- */
-
-
-if (!isset($_GET['clientkey'])){
-    $errmsg =  "Client key required";
+if (!isset($_GET['clientkey'])) {
+    $errmsg = "Client key required";
     print_error_page($errmsg);
     exit;
 }
-$input_clientkey = $_GET['clientkey'];
+$inputclientkey = $_GET['clientkey'];
 
-
-/***********************************************************************
- * KEY CHECKS
- * *********************************************************************
+/*
+ * Key Checks
  */
-
 
 $plagiarismsettings = (array)get_config('plagiarism');
 
-if (!empty($plagiarismsettings['originality_key'])){
-    $client_key = $plagiarismsettings['originality_key'];
-    //   $output.= '<h4>Client key:'. $client_key.'</h4>';
-}else{
+if (!empty($plagiarismsettings['originality_key'])) {
+    $clientkey = $plagiarismsettings['originality_key'];
+} else {
     log_it("No originality key in database");
     header('HTTP/1.1 403 Forbidden');
     exit;
 }
 
-$client_key_valid = client_key_valid($input_clientkey);
+$clientkeyvalid = client_key_valid($inputclientkey);
 
-if (!$client_key_valid){
+if (!$clientkeyvalid) {
     echo "Client key invalid";
     log_it("Client key invalid");
     exit;
 }
 
-if ($input_clientkey != $client_key){
+if ($inputclientkey != $clientkey) {
     echo "Client key input does not match saved settings";
     exit;
 }
 
-if (isset($_GET['requesttype'])){
-    if ($_GET['requesttype']==1)  {
+if (isset($_GET['requesttype'])) {
+    if ($_GET['requesttype'] == 1) {
         log_it("Successful request made: " . $_SERVER['QUERY_STRING']);
-        require_once 'requests_1.php';
-    }
-    elseif ($_GET['requesttype'] == 2 )  {
+        // @codingStandardsIgnoreLine
+        log_it(" POST: " . print_r($_POST, 1));
+        require_once('requests_1.php');
+    } else if ($_GET['requesttype'] == 2) {
         log_it("Successful request made: " . $_SERVER['QUERY_STRING']);
-        require_once 'requests_2.php';
-    }
-    elseif ($_GET['requesttype'] == 3 )  {
+        require_once('requests_2.php');
+    } else if ($_GET['requesttype'] == 3) {
         log_it("Successful request made: " . $_SERVER['QUERY_STRING']);
-        require_once 'requests_3.php';
-    }
-    else{
+        require_once('requests_3.php');
+    } else {
         $errmsg = "No such request type defined.";
         print_error_page($errmsg);
     }
-}else{
+} else {
     $errmsg = "You must give a request type.";
     print_error_page($errmsg);
 }
 
 
-function print_error_page($error){
-    $requesttype = isset($_GET['requesttype']) ? $_GET['requesttype']: 'none given';
+function print_error_page($error) {
+    $requesttype = isset($_GET['requesttype']) ? $_GET['requesttype'] : 'none given';
 
     log_it("Invalid request: $error, requesttype = $requesttype");
     echo <<<HHH
@@ -127,37 +126,47 @@ HHH;
 
 
 
-function client_key_valid($key){
+function client_key_valid($key) {
 
-    list($orig_server, $orig_key) = get_server_and_key();
+    list($origserver, $origkey) = get_server_and_key();
 
-    $orig_server = $orig_server->value;
+    $curl = curl_init();
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "$orig_server/Api/validate/$key");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-    $output = curl_exec($ch);
-    $info = curl_getinfo($ch);
-    curl_close($ch);
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => $origserver->value . "customers/ping",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => "",
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => "GET",
+        CURLOPT_HTTPHEADER => array(
+            "authorization: ".$key,
+            "cache-control: no-cache",
+        ),
+    ));
 
-    $output = strip_tags($output);
+    $output = curl_exec($curl);
 
-    if ($output=='true') {
+    $outputarray = json_decode($output, true);
+
+    $err = curl_error($curl);
+
+    curl_close($curl);
+
+    if ($outputarray['Pong'] == 'true') {
         return true;
-    }
-    else {
+    } else {
         return false;
     }
+
 }
 
 
-function get_server_and_key(){
+function get_server_and_key() {
     global $DB;
-    $orig_key = $DB->get_record('config_plugins', array('name'=>'originality_key', 'plugin'=>'plagiarism'));
-    $orig_server = $DB->get_record('config_plugins', array('name'=>'originality_server', 'plugin'=>'plagiarism'));
-    return array($orig_server, $orig_key);
+
+    $origkey = $DB->get_record('config_plugins', array('name' => 'originality_key', 'plugin' => 'plagiarism'));
+    $origserver = $DB->get_record('config_plugins', array('name' => 'originality_server', 'plugin' => 'plagiarism'));
+    return array($origserver, $origkey);
 }
-
-
-?>

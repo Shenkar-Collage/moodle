@@ -4,46 +4,32 @@
  */
 
 require(['jquery', 'jqueryui'], function($) {
-	$(document).ready(function() {
-        var exts = $('#file_exts').html();
-        var exts_array = exts.split(',');
+    $(document).ready(function() {
+        // Added by openapp, move the div from the top of the page to the area of the assignment submission.
+        var originalityInter = $('#intro-originality.generalbox');
+        $('#intro-originality.generalbox').remove();
+        $('.editsubmissionform').before(originalityInter);
 
-        var allowed_file_types = $.map(exts_array, function(value) { return value.trim();});
+        $('#region-main input[id="id_submitbutton"]').click(function(e){
 
-	    //Added by openapp, move the div from the top of the page to the area of the assignment submission.
-	    var originalityInter = $('#intro-originality.generalbox');
-	    $('#intro-originality.generalbox').remove();
-	    $('.editsubmissionform').before(originalityInter);
+            e.preventDefault();
 
-        if (!$("#iagree").prop('checked'))  {
-            $('input[id="id_submitbutton"]').attr('disabled','disabled');
-        }
+            window.onbeforeunload = null;
 
-	    $("#iagree").change(function() {
-	        if ($(this).is(":checked")) {
-        	    $('input[id="id_submitbutton"]').removeAttr('disabled')
-	        } else {
-        	    $('input[id="id_submitbutton"]').attr('disabled','disabled');
-	        }
-	    });
-        $('#region-main input[id="id_submitbutton"]').click(function(){
+            var isChecked = $('#iagree').prop('checked');
 
-            var filename = $('.fp-thumbnail>img').attr('alt');
-            var file_ext = filename.split('.').pop().toLowerCase();
-            //var allowed_file_types = ["txt", "rtf", "doc", "docx", "pdf"];
+            if (!isChecked) {
+                var msg = $("#click_checkbox_msg").text();
+                var button_text = $("#click_checkbox_button_text").text();
 
-            var allowed = $.inArray(file_ext, allowed_file_types) > -1;
-
-            if (!allowed){
-                $('#fileext_err').show();
-                return false;
-            }else {
-                //$(this).attr('disabled','disabled');
-                //$('#mform1').submit();
-                $(this).hide();
-                return true;
+                require(['core/notification'], function(notification) {
+                    notification.alert('', msg, button_text);
+                });
+                return;
             }
+            $('#mform1').submit();
+            return true;
         });
 
-	});
+    });
 });

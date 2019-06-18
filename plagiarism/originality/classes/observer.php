@@ -22,17 +22,18 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
+
 class plagiarism_originality_observer {
     /**
      * Observer function to handle the assessable_uploaded event in mod_assign.
      * @param \assignsubmission_file\event\assessable_uploaded $event
      */
+
     public static function assignsubmission_file_uploaded(
         \assignsubmission_file\event\assessable_uploaded $event) {
         global $CFG;
         require_once($CFG->dirroot . '/plagiarism/originality/lib.php');
         $eventdata = $event->get_data();
-       //$eventdata['eventtype'] = 'assignsubmission_file_uploaded';
         $originality = new plagiarism_plugin_originality();
         $originality->originality_event_file_uploaded($eventdata);
     }
@@ -45,10 +46,7 @@ class plagiarism_originality_observer {
         \mod_forum\event\assessable_uploaded $event) {
         global $CFG;
         require_once($CFG->dirroot . '/plagiarism/originality/lib.php');
-        $eventdata = $event->get_data();
-        //$eventdata['eventtype'] = 'forum_file_uploaded';
         $originality = new plagiarism_plugin_originality();
-       // $originality->event_handler($eventdata);
     }
     /**
      * Observer function to handle the assessable_uploaded event in mod_workshop.
@@ -58,22 +56,20 @@ class plagiarism_originality_observer {
         \mod_workshop\event\assessable_uploaded $event) {
         global $CFG;
         require_once($CFG->dirroot . '/plagiarism/originality/lib.php');
-        $eventdata = $event->get_data();
-       // $eventdata['eventtype'] = 'workshop_file_uploaded';
         $originality = new plagiarism_plugin_originality();
-       // $originality->event_handler($eventdata);
     }
 
     /**
      * Observer function to handle the assessable_uploaded event in mod_assign onlinetext.
      * @param \assignsubmission_onlinetext\event\assessable_uploaded $event
      */
+
+    // An online text submission creates an online text uploaded event if the assignment is defined to have online text, even if the text box is left empty by the student.
     public static function assignsubmission_onlinetext_uploaded(
         \assignsubmission_onlinetext\event\assessable_uploaded $event) {
         global $CFG;
         require_once($CFG->dirroot . '/plagiarism/originality/lib.php');
         $eventdata = $event->get_data();
-        //$eventdata['eventtype'] = 'assignsubmission_onlinetext_uploaded';
         $originality = new plagiarism_plugin_originality();
         $originality->originality_event_onlinetext_submitted($eventdata);
     }
@@ -82,12 +78,8 @@ class plagiarism_originality_observer {
         \mod_assign\event\assessable_submitted $event) {
         global $CFG;
         require_once($CFG->dirroot . '/plagiarism/originality/lib.php');
-        $eventdata = $event->get_data();
-        //$eventdata['eventtype'] = 'assignsubmission_onlinetext_uploaded';
         $originality = new plagiarism_plugin_originality();
-       // $originality->originality_event_onlinetext_submitted($eventdata);
     }
 
 }
 
-?>

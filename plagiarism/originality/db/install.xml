@@ -24,8 +24,9 @@
                     <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="userid" DEFAULT="0"/>
                     <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"  PREVIOUS="assignment" NEXT="grade" DEFAULT="0"/>
                     <FIELD NAME="grade" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="userid" NEXT="file" DEFAULT="0"/>
-                    <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="grade"/> <!--NEXT="file_identifier"-->
-                    <!--<FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" />-->
+                    <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="grade" NEXT="file_identifier" />
+                    <FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" NEXT="moodle_file_id" />
+                    <FIELD NAME="moodle_file_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file_identifier" DEFAULT="0" />
                 </FIELDS>
 
                 <KEYS>
@@ -38,8 +39,10 @@
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" NEXT="assignment"/>
                 <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="id" NEXT="userid" DEFAULT="0"/>
                 <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"  PREVIOUS="assignment" NEXT="file" DEFAULT="0"/>
-                <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="userid"  /> <!--NEXT="file_identifier"-->
-                <!--<FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" />-->
+                <FIELD NAME="file" TYPE="text" LENGTH="medium" NOTNULL="false"  SEQUENCE="false" PREVIOUS="userid"  NEXT="file_identifier" />
+                <FIELD NAME="file_identifier" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file" DEFAULT="0" NEXT="moodle_file_id" />
+                <FIELD NAME="moodle_file_id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="file_identifier" DEFAULT="0" NEXT="resubmit_date" />
+                <FIELD NAME="submit_date" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" PREVIOUS="moodle_file_id" DEFAULT="0"/>
             </FIELDS>
 
             <KEYS>
