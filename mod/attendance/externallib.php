@@ -70,7 +70,10 @@ class mod_wsattendance_external extends external_api {
                          'studentscanmark' => new external_value(PARAM_INT, 'Students can mark their own presence.'),
                          'absenteereport' => new external_value(PARAM_INT, 'Session included in absetee reports.'),
                          'autoassignstatus' => new external_value(PARAM_INT, 'Automatically assign a status to students.'),
-                         'statusset' => new external_value(PARAM_INT, 'Session statusset.'));
+                         'preventsharedip' => new external_value(PARAM_INT, 'Prevent students from sharing IP addresses.'),
+                         'preventsharediptime' => new external_value(PARAM_INT, 'Time delay before IP address is allowed again.'),
+                         'statusset' => new external_value(PARAM_INT, 'Session statusset.'),
+                         'includeqrcode' => new external_value(PARAM_INT, 'Include QR code when displaying password'));
 
         return $session;
     }

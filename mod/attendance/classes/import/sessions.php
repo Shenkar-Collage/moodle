@@ -107,7 +107,11 @@ class sessions {
             get_string('subnet', 'attendance'),
             get_string('automark', 'attendance'),
             get_string('autoassignstatus', 'attendance'),
-            get_string('absenteereport', 'attendance')
+            get_string('absenteereport', 'attendance'),
+            get_string('preventsharedip', 'attendance'),
+            get_string('preventsharediptime', 'attendance'),
+            get_string('calendarevent', 'attendance'),
+            get_string('includeqrcode', 'attendance'),
         );
     }
 
@@ -143,7 +147,11 @@ class sessions {
                 'subnet' => $data->header12,
                 'automark' => $data->header13,
                 'autoassignstatus' => $data->header14,
-                'absenteereport' => $data->header15
+                'absenteereport' => $data->header15,
+                'preventsharedip' => $data->header16,
+                'preventsharediptime' => $data->header17,
+                'calendarevent' => $data->header18,
+                'includeqrcode' => $data->header19
             );
         } else {
             return array(
@@ -162,7 +170,11 @@ class sessions {
                 'subnet' => 12,
                 'automark' => 13,
                 'autoassignstatus' => 14,
-                'absenteereport' => 15
+                'absenteereport' => 15,
+                'preventsharedip' => 16,
+                'preventsharediptime' => 17,
+                'calendarevent' => 18,
+                'includeqrcode' => 19
             );
         }
     }
@@ -317,6 +329,23 @@ class sessions {
             } else {
                 $session->absenteereport = $this->get_column_data($row, $mapping['absenteereport']);
             }
+            if ($mapping['preventsharedip'] == -1) {
+                $session->preventsharedip = $pluginconfig->preventsharedip;
+            } else {
+                $session->preventsharedip = $this->get_column_data($row, $mapping['preventsharedip']);
+            }
+            if ($mapping['preventsharediptime'] == -1) {
+                $session->preventsharediptime = $pluginconfig->preventsharediptime;
+            } else {
+                $session->preventsharediptime = $this->get_column_data($row, $mapping['preventsharediptime']);
+            }
+
+            if ($mapping['includeqrcode'] == -1) {
+                $session->includeqrcode = $pluginconfig->includeqrcode_default;
+            } else {
+                $session->includeqrcode = $this->get_column_data($row, $mapping['includeqrcode']);
+            }
+
             $session->statusset = 0;
 
             $sessions[] = $session;

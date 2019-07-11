@@ -3,8 +3,8 @@ language: php
 sudo: true
 
 addons:
-  postgresql: "9.3"
   firefox: "47.0.1"
+  postgresql: "9.3"
   apt:
     packages:
       - oracle-java8-installer
@@ -16,13 +16,12 @@ cache:
     - $HOME/.npm
 
 php:
- - 5.6
- - 7.0
- - 7.1
-
+  - 7.1
+  - 7.2
 env:
  global:
-  - MOODLE_BRANCH=MOODLE_33_STABLE
+  - MOODLE_BRANCH=MOODLE_35_STABLE
+  - MUSTACHE_IGNORE_NAMES=mobile_teacher_form.mustache
  matrix:
   - DB=pgsql
   - DB=mysqli

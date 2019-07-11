@@ -62,17 +62,23 @@ class mod_attendance_update_form extends moodleform {
         $endhour = floor($endtime / HOURSECS);
         $endminute = floor(($endtime - $endhour * HOURSECS) / MINSECS);
 
-        $data = array('sessiondate' => $sess->sessdate,
-                'sestime' => array('starthour' => $starthour, 'startminute' => $startminute,
-                                   'endhour' => $endhour, 'endminute' => $endminute),
-                'sdescription' => $sess->description_editor,
-                'studentscanmark' => $sess->studentscanmark,
-                'studentpassword' => $sess->studentpassword,
-                'autoassignstatus' => $sess->autoassignstatus,
-                'subnet' => $sess->subnet,
-                'automark' => $sess->automark,
-                'absenteereport' => $sess->absenteereport,
-                'automarkcompleted' => 0);
+        $data = array(
+            'sessiondate' => $sess->sessdate,
+            'sestime' => array('starthour' => $starthour, 'startminute' => $startminute,
+            'endhour' => $endhour, 'endminute' => $endminute),
+            'sdescription' => $sess->description_editor,
+            'calendarevent' => $sess->calendarevent,
+            'studentscanmark' => $sess->studentscanmark,
+            'studentpassword' => $sess->studentpassword,
+            'autoassignstatus' => $sess->autoassignstatus,
+            'subnet' => $sess->subnet,
+            'automark' => $sess->automark,
+            'absenteereport' => $sess->absenteereport,
+            'automarkcompleted' => 0,
+            'preventsharedip' => $sess->preventsharedip,
+            'preventsharediptime' => $sess->preventsharediptime,
+            'includeqrcode' => $sess->includeqrcode
+        );
         if ($sess->subnet == $attendancesubnet) {
             $data['usedefaultsubnet'] = 1;
         } else {
@@ -97,13 +103,23 @@ class mod_attendance_update_form extends moodleform {
         // Show which status set is in use.
         $maxstatusset = attendance_get_max_statusset($this->_customdata['att']->id);
         if ($maxstatusset > 0) {
-            $mform->addElement('static', 'statusset', get_string('usestatusset', 'mod_attendance'),
+            $mform->addElement('static', 'statussetstring', get_string('usestatusset', 'mod_attendance'),
                 attendance_get_setname($this->_customdata['att']->id, $sess->statusset));
         }
+        $mform->addElement('hidden', 'statusset', $sess->statusset);
+        $mform->setType('statusset', PARAM_INT);
 
         $mform->addElement('editor', 'sdescription', get_string('description', 'attendance'),
                            array('rows' => 1, 'columns' => 80), $defopts);
         $mform->setType('sdescription', PARAM_RAW);
+
+        if (!empty(get_config('attendance', 'enablecalendar'))) {
+            $mform->addElement('checkbox', 'calendarevent', '', get_string('calendarevent', 'attendance'));
+            $mform->addHelpButton('calendarevent', 'calendarevent', 'attendance');
+        } else {
+            $mform->addElement('hidden', 'calendarevent', 0);
+            $mform->setType('calendarevent', PARAM_INT);
+        }
 
         // If warnings allow selector for reporting.
         if (!empty(get_config('attendance', 'enablewarnings'))) {
@@ -124,17 +140,19 @@ class mod_attendance_update_form extends moodleform {
             $mform->addElement('select', 'automark', get_string('automark', 'attendance'), $options2);
             $mform->setType('automark', PARAM_INT);
             $mform->addHelpButton('automark', 'automark', 'attendance');
-            $mform->disabledif('automark', 'studentscanmark', 'notchecked');
+            $mform->hideif('automark', 'studentscanmark', 'notchecked');
 
             $mform->addElement('text', 'studentpassword', get_string('studentpassword', 'attendance'));
             $mform->setType('studentpassword', PARAM_TEXT);
             $mform->addHelpButton('studentpassword', 'passwordgrp', 'attendance');
-            $mform->disabledif('studentpassword', 'studentscanmark', 'notchecked');
-            $mform->disabledif('studentpassword', 'automark', 'eq', ATTENDANCE_AUTOMARK_ALL);
-            $mform->disabledif('randompassword', 'automark', 'eq', ATTENDANCE_AUTOMARK_ALL);
+            $mform->hideif('studentpassword', 'studentscanmark', 'notchecked');
+            $mform->hideif('studentpassword', 'automark', 'eq', ATTENDANCE_AUTOMARK_ALL);
+            $mform->hideif('randompassword', 'automark', 'eq', ATTENDANCE_AUTOMARK_ALL);
+            $mform->addElement('checkbox', 'includeqrcode', '', get_string('includeqrcode', 'attendance'));
+            $mform->hideif('includeqrcode', 'studentscanmark', 'notchecked');
             $mform->addElement('checkbox', 'autoassignstatus', '', get_string('autoassignstatus', 'attendance'));
             $mform->addHelpButton('autoassignstatus', 'autoassignstatus', 'attendance');
-            $mform->disabledif('autoassignstatus', 'studentscanmark', 'notchecked');
+            $mform->hideif('autoassignstatus', 'studentscanmark', 'notchecked');
 
             $mgroup = array();
             $mgroup[] = & $mform->createElement('text', 'subnet', get_string('requiresubnet', 'attendance'));
@@ -147,13 +165,25 @@ class mod_attendance_update_form extends moodleform {
             $mform->setAdvanced('subnetgrp');
             $mform->addHelpButton('subnetgrp', 'requiresubnet', 'attendance');
 
-            $mform->disabledif('usedefaultsubnet', 'studentscanmark', 'notchecked');
-            $mform->disabledif('subnet', 'studentscanmark', 'notchecked');
-            $mform->disabledif('subnet', 'usedefaultsubnet', 'checked');
+            $mform->hideif('subnetgrp', 'studentscanmark', 'notchecked');
+            $mform->hideif('subnet', 'usedefaultsubnet', 'checked');
 
             $mform->addElement('hidden', 'automarkcompleted', '0');
             $mform->settype('automarkcompleted', PARAM_INT);
 
+            $mgroup3 = array();
+            $options = attendance_get_sharedipoptions();
+            $mgroup3[] = & $mform->createElement('select', 'preventsharedip',
+                get_string('preventsharedip', 'attendance'), $options);
+            $mgroup3[] = & $mform->createElement('text', 'preventsharediptime',
+                get_string('preventsharediptime', 'attendance'), '', 'test');
+            $mform->addGroup($mgroup3, 'preventsharedgroup',
+                get_string('preventsharedip', 'attendance'), array(' '), false);
+            $mform->addHelpButton('preventsharedgroup', 'preventsharedip', 'attendance');
+            $mform->setAdvanced('preventsharedgroup');
+            $mform->setType('preventsharediptime', PARAM_INT);
+            $mform->hideif('preventsharedgroup', 'studentscanmark', 'notchecked');
+            $mform->hideIf('preventsharediptime', 'preventsharedip', 'noteq', ATTENDANCE_SHAREDIP_MINUTES);
         } else {
             $mform->addElement('hidden', 'studentscanmark', '0');
             $mform->settype('studentscanmark', PARAM_INT);
@@ -168,7 +198,6 @@ class mod_attendance_update_form extends moodleform {
         }
 
         $mform->setDefaults($data);
-
         $this->add_action_buttons(true);
     }
 
@@ -187,7 +216,7 @@ class mod_attendance_update_form extends moodleform {
             $errors['sestime'] = get_string('invalidsessionendtime', 'attendance');
         }
 
-        if ($data['automark'] == ATTENDANCE_AUTOMARK_CLOSE) {
+        if (!empty($data['studentscanmark']) && $data['automark'] == ATTENDANCE_AUTOMARK_CLOSE) {
             $cm            = $this->_customdata['cm'];
             // Check that the selected statusset has a status to use when unmarked.
             $sql = 'SELECT id
@@ -200,6 +229,11 @@ class mod_attendance_update_form extends moodleform {
             }
         }
 
+        if (!empty($data['studentscanmark']) && !empty($data['preventsharedip']) &&
+                empty($data['preventsharediptime'])) {
+            $errors['preventsharedgroup'] = get_string('iptimemissing', 'attendance');
+
+        }
         return $errors;
     }
 }

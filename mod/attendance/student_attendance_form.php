@@ -44,6 +44,8 @@ class mod_attendance_student_attendance_form extends moodleform {
 
         $attforsession = $this->_customdata['session'];
         $attblock = $this->_customdata['attendance'];
+        $password = $this->_customdata['password'];
+	$sid = $this->_customdata['sid']; //jacobz 13/01/2019
 
         $statuses = $attblock->get_statuses();
         // Check if user has access to all statuses.
@@ -62,11 +64,17 @@ class mod_attendance_student_attendance_form extends moodleform {
         $mform->addElement('hidden', 'sessid', null);
         $mform->setType('sessid', PARAM_INT);
         $mform->setConstant('sessid', $attforsession->id);
+	
 
         $mform->addElement('hidden', 'sesskey', null);
         $mform->setType('sesskey', PARAM_INT);
         $mform->setConstant('sesskey', sesskey());
-
+//jacobz add $sid
+//        $mform->addElement('html', $sid);
+	$mform->addElement('hidden', 'sid', null);
+        $mform->setType('sid', PARAM_TEXT);
+        $mform->setConstant('sid', $sid);
+//----------------
         // Set a title as the date and time of the session.
         $sesstiontitle = userdate($attforsession->sessdate, get_string('strftimedate')).' '
                 .attendance_strftimehm($attforsession->sessdate);
@@ -81,6 +89,7 @@ class mod_attendance_student_attendance_form extends moodleform {
             $mform->addElement('text', 'studentpassword', get_string('password', 'attendance'));
             $mform->setType('studentpassword', PARAM_TEXT);
             $mform->addRule('studentpassword', get_string('passwordrequired', 'attendance'), 'required');
+            $mform->setDefault('studentpassword', $password);
         }
         if (!$attforsession->autoassignstatus) {
 
@@ -99,6 +108,11 @@ class mod_attendance_student_attendance_form extends moodleform {
             $radiogroup->setAttributes(array('class' => 'statusgroup'));
             $mform->addRule('statusarray', get_string('attendancenotset', 'attendance'), 'required', '', 'client', false, false);
         }
+
+//jacobz add remarks for student 05.02.2019
+	$mform->addElement('text', 'remarks', get_string('remarks', 'attendance').':');
+        $mform->setType('remarks', PARAM_TEXT);
+//-------------------------------------------------------------------------------------
         $this->add_action_buttons();
     }
 

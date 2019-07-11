@@ -71,7 +71,10 @@ class user_sessions_cells_generator {
                     $this->construct_hidden_status_cell($this->reportdata->allstatuses[$statusid]->acronym);
                 }
                 if ($remarks) {
-                    $this->construct_remarks_cell($this->reportdata->sessionslog[$this->user->id][$sess->id]->remarks);
+//jacob 04/02/2019 merge timetaken & remarks 
+                 //   $this->construct_remarks_cell($this->reportdata->sessionslog[$this->user->id][$sess->id]->remarks);
+  $this->construct_remarks_cell($this->reportdata->sessionslog[$this->user->id][$sess->id]->timetaken.' '.$this->reportdata->sessionslog[$this->user->id][$sess->id]->remarks);
+
                 }
             } else {
                 if ($this->user->enrolmentstart > $sess->sessdate) {
@@ -310,47 +313,6 @@ class user_sessions_cells_text_generator extends user_sessions_cells_generator {
 }
 
 /**
- * Used to print simple time - 1am instead of 1:00am.
- *
- * @param int $time - unix timestamp.
- */
-function attendance_strftimehm($time) {
-    $mins = userdate($time, '%M');
-    if ($mins == '00') {
-        return userdate($time, get_string('strftimeh', 'attendance'));
-    } else {
-        return userdate($time, get_string('strftimehm', 'attendance'));
-    }
-}
-
-/**
- * Used to print simple time - 1am instead of 1:00am.
- *
- * @param int $datetime - unix timestamp.
- * @param int $duration - number of seconds.
- */
-function construct_session_time($datetime, $duration) {
-    $starttime = attendance_strftimehm($datetime);
-    $endtime = attendance_strftimehm($datetime + $duration);
-
-    return $starttime . ($duration > 0 ? ' - ' . $endtime : '');
-}
-
-/**
- * Used to print session time.
- *
- * @param int $datetime - unix timestamp.
- * @param int $duration - number of seconds duration.
- * @return string.
- */
-function construct_session_full_date_time($datetime, $duration) {
-    $sessinfo = userdate($datetime, get_string('strftimedmyw', 'attendance'));
-    $sessinfo .= ' '.construct_session_time($datetime, $duration);
-
-    return $sessinfo;
-}
-
-/**
  * Used to construct user summary.
  *
  * @param stdclass $usersummary - data for summary.
@@ -369,14 +331,13 @@ function construct_user_data_stat($usersummary, $view) {
     $row = new html_table_row();
     $row->attributes['class'] = 'normal';
     $row->cells[] = get_string('pointssessionscompleted', 'attendance') . ':';
-    $row->cells[] = format_float($usersummary->takensessionspoints, 1, true, true) . ' / ' .
-                        format_float($usersummary->takensessionsmaxpoints, 1, true, true);
+    $row->cells[] = $usersummary->pointssessionscompleted;
     $stattable->data[] = $row;
 
     $row = new html_table_row();
     $row->attributes['class'] = 'normal';
     $row->cells[] = get_string('percentagesessionscompleted', 'attendance') . ':';
-    $row->cells[] = format_float($usersummary->takensessionspercentage * 100) . '%';
+    $row->cells[] = $usersummary->percentagesessionscompleted;
     $stattable->data[] = $row;
 
     if ($view == ATT_VIEW_ALL) {
@@ -389,27 +350,25 @@ function construct_user_data_stat($usersummary, $view) {
         $row = new html_table_row();
         $row->attributes['class'] = 'highlight';
         $row->cells[] = get_string('pointsallsessions', 'attendance') . ':';
-        $row->cells[] = format_float($usersummary->takensessionspoints, 1, true, true) . ' / ' .
-                            format_float($usersummary->allsessionsmaxpoints, 1, true, true);
+        $row->cells[] = $usersummary->pointsallsessions;
         $stattable->data[] = $row;
 
         $row = new html_table_row();
         $row->attributes['class'] = 'highlight';
         $row->cells[] = get_string('percentageallsessions', 'attendance') . ':';
-        $row->cells[] = format_float($usersummary->allsessionspercentage * 100) . '%';
+        $row->cells[] = $usersummary->allsessionspercentage;
         $stattable->data[] = $row;
 
         $row = new html_table_row();
         $row->attributes['class'] = 'normal';
         $row->cells[] = get_string('maxpossiblepoints', 'attendance') . ':';
-        $row->cells[] = format_float($usersummary->maxpossiblepoints, 1, true, true) . ' / ' .
-                            format_float($usersummary->allsessionsmaxpoints, 1, true, true);
+        $row->cells[] = $usersummary->maxpossiblepoints;
         $stattable->data[] = $row;
 
         $row = new html_table_row();
         $row->attributes['class'] = 'normal';
         $row->cells[] = get_string('maxpossiblepercentage', 'attendance') . ':';
-        $row->cells[] = format_float($usersummary->maxpossiblepercentage * 100) . '%';
+        $row->cells[] = $usersummary->maxpossiblepercentage;
         $stattable->data[] = $row;
     }
 

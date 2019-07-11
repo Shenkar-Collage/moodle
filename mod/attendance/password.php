@@ -26,6 +26,56 @@
  */
 
 require_once(dirname(__FILE__).'/../../config.php');
+require_once(dirname(__FILE__).'/locallib.php');
+require_once($CFG->libdir.'/tcpdf/tcpdf_barcodes_2d.php'); // Used for generating qrcode.
+
+//**************************************************************************************************
+//Jacobz 10/01/2018
+//**************************************************************************************************
+
+$url1=$_SERVER['REQUEST_URI'];
+header("Refresh: 5; URL=$url1");
+
+
+
+//$key is our base64 encoded 256bit key that we created earlier. You will probably store and define this key in a config file.
+$key = 'bRuD5WYw5wd0rdHR9yLlM6wt2vteuiniQBqE70nAuhU=';
+
+function my_encrypt($data, $key) {
+    // Remove the base64 encoding from our key
+    $encryption_key = base64_decode($key);
+    // Generate an initialization vector
+    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+    // Encrypt the data using AES 256 encryption in CBC mode using our encryption key and initialization vector.
+    $encrypted = openssl_encrypt($data, 'aes-256-cbc', $encryption_key, 0, $iv);
+    // The $iv is just as important as the key for decrypting, so save it with our encrypted data using a unique separator (::)
+    return base64_encode($encrypted . '::' . $iv);
+}
+
+function my_decrypt($data, $key) {
+    // Remove the base64 encoding from our key
+    $encryption_key = base64_decode($key);
+    // To decrypt, split the encrypted data from our IV - our unique separator used was "::"
+    list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);
+    return openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
+}
+
+//our data to be encoded
+$data_plain = time();
+//echo $data_plain . "<br>";
+
+//our data being encrypted. This encrypted data will probably be going into a database
+//since it's base64 encoded, it can go straight into a varchar or text database field without corruption worry
+$data_encrypted = my_encrypt($data_plain, $key);
+$data_encrypted = str_replace("+", "%2B",$data_encrypted);
+//echo $data_encrypted . "<br>";
+
+//now we turn our encrypted data back to plain text
+$data_decrypted = my_decrypt($data_encrypted, $key);
+//echo $data_decrypted . "<br>";
+
+//**************************************************************************************************
+
 
 $session = required_param('session', PARAM_INT);
 $session = $DB->get_record('attendance_sessions', array('id' => $session), '*', MUST_EXIST);
@@ -44,8 +94,22 @@ $PAGE->set_pagelayout('popup');
 
 $PAGE->set_context(context_system::instance());
 
-$PAGE->set_title(get_string('password', 'attendance'));
+//jacobz 02/05/2019
+//$PAGE->set_title(get_string('password', 'attendance'));
+$PAGE->set_title(get_string('qrcode', 'attendance'));
+
 
 echo $OUTPUT->header();
-echo html_writer::span($session->studentpassword, 'student-password');
+//echo html_writer::tag('h2', get_string('passwordgrp', 'attendance'));
+//echo html_writer::span($session->studentpassword, 'student-password');
+
+if (isset($session->includeqrcode) && $session->includeqrcode == 1) {
+$key = md5(microtime().rand());
+    $qrcodeurl = $CFG->wwwroot . '/mod/attendance/attendance.php?sessid=' . $session->id.'&sid=' .$data_encrypted;
+    echo html_writer::tag('h3', get_string('qrcode', 'attendance'));
+
+    $barcode = new TCPDF2DBarcode($qrcodeurl, 'QRCODE');
+    $image = $barcode->getBarcodePngData(15, 15);
+    echo html_writer::img('data:image/png;base64,' . base64_encode($image), get_string('qrcode', 'attendance'));
+}
 echo $OUTPUT->footer();
