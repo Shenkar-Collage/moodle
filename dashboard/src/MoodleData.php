@@ -162,11 +162,11 @@ class MoodleData
                 c.idnumber,
                 SUBSTRING($deptExpr, 1, 2)                                          AS dept_code,
                 COUNT(e.userid)                                                      AS total_students,
-                COUNT(CASE WHEN ula.lastaccess IS NOT NULL AND ula.lastaccess > $ts30
+                COUNT(CASE WHEN ula.timeaccess IS NOT NULL AND ula.timeaccess > $ts30
                            THEN 1 END)                                               AS active_30d,
-                COUNT(CASE WHEN ula.lastaccess IS NOT NULL AND ula.lastaccess <= $ts30
+                COUNT(CASE WHEN ula.timeaccess IS NOT NULL AND ula.timeaccess <= $ts30
                            THEN 1 END)                                               AS inactive_30d,
-                COUNT(CASE WHEN ula.lastaccess IS NULL THEN 1 END)                   AS never_accessed,
+                COUNT(CASE WHEN ula.timeaccess IS NULL THEN 1 END)                   AS never_accessed,
                 (SELECT COUNT(DISTINCT cm.module)
                  FROM {$p}course_modules cm
                  WHERE cm.course = c.id AND cm.deletioninprogress = 0)               AS component_count
@@ -260,10 +260,10 @@ class MoodleData
                 u.firstname,
                 u.lastname,
                 u.email,
-                ula.lastaccess,
+                ula.timeaccess,
                 CASE
-                    WHEN ula.lastaccess IS NULL THEN NULL
-                    ELSE FLOOR(($now - ula.lastaccess) / 86400)
+                    WHEN ula.timeaccess IS NULL THEN NULL
+                    ELSE FLOOR(($now - ula.timeaccess) / 86400)
                 END{$daysCast}                          AS days_since_access,
                 COALESCE(lt.total_minutes, 0)           AS total_minutes
             FROM {$p}user u
