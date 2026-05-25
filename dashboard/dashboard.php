@@ -422,6 +422,9 @@ include __DIR__ . '/views/layout_header.php';
 <?php endif; // dbError ?>
 
 <?php
+$jsLabels = json_encode($pieData['labels'], JSON_UNESCAPED_UNICODE);
+$jsValues = json_encode($pieData['values']);
+$jsColors = json_encode($pieData['colors']);
 $extraJs = <<<JS
 <script>
 (function(){
@@ -430,10 +433,10 @@ $extraJs = <<<JS
   new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: <?= json_encode($pieData['labels'], JSON_UNESCAPED_UNICODE) ?>,
+      labels: $jsLabels,
       datasets: [{
-        data:            <?= json_encode($pieData['values']) ?>,
-        backgroundColor: <?= json_encode($pieData['colors']) ?>,
+        data:            $jsValues,
+        backgroundColor: $jsColors,
         borderWidth: 2,
         borderColor: '#fff',
         hoverOffset: 6,
