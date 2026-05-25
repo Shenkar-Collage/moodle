@@ -84,6 +84,10 @@
         </select>
       </form>
       <?php endif; ?>
+      <a href="<?= BASE_URL ?>/logout.php" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" title="יציאה מהמערכת">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span class="d-none d-md-inline">יציאה</span>
+      </a>
     </header>
 
     <main class="page-body">

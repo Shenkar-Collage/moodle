@@ -117,7 +117,12 @@ class Auth
 
     public static function saveUsers(array $users): void
     {
-        $file = DASHBOARD_ROOT . '/data/users.json';
-        file_put_contents($file, json_encode(array_values($users), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $dir  = DASHBOARD_ROOT . '/data';
+        $file = $dir . '/users.json';
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        $result = file_put_contents($file, json_encode(array_values($users), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        if ($result === false) {
+            throw new RuntimeException("לא ניתן לכתוב לקובץ $file — בדוק הרשאות תיקיית data/");
+        }
     }
 }

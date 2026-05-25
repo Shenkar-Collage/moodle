@@ -20,8 +20,10 @@ class Settings
 
     public static function set(string $key, mixed $value): void
     {
-        $data        = self::all();
-        $data[$key]  = $value;
+        $dir = DASHBOARD_ROOT . '/data';
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        $data       = self::all();
+        $data[$key] = $value;
         file_put_contents(self::file(), json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }

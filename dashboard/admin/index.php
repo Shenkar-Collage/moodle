@@ -56,8 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? ''))
                     'category_id'     => $categoryId,
                     'active'          => true,
                 ];
-                Auth::saveUsers($users);
-                $message = "המשתמש {$username} נוסף בהצלחה.";
+                try {
+                    Auth::saveUsers($users);
+                    $message = "המשתמש {$username} נוסף בהצלחה.";
+                } catch (RuntimeException $e) {
+                    $message = 'שגיאה: ' . $e->getMessage();
+                    $users   = Auth::loadUsers();
+                }
             }
         } else {
             $message = 'יש למלא את כל השדות.';

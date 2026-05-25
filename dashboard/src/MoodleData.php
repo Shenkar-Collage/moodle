@@ -26,16 +26,25 @@ class MoodleData
      * Returns distinct year-semester combinations found in course shortnames.
      * Shortname format: {year}_{sem}_{coursenum5+digits}
      */
-    public static function getAvailableSemesters(): array
+    public static function getAvailableSemesters(int $categoryId = 0): array
     {
         $p    = self::p();
         $year = self::splitPart('shortname', 1);
         $sem  = self::splitPart('shortname', 2);
 
         if (self::isPg()) {
-            $regexCond = "shortname ~ '^\\S+_\\S+_\\d{5,}'";
+            $regexCond = "shortname ~ '^\\\\S+_\\\\S+_\\\\d{5,}'";
         } else {
             $regexCond = "shortname REGEXP '^[^_]+_[^_]+_[0-9]{5}'";
+        }
+
+        $catWhere = '';
+        if ($categoryId > 0) {
+            $catIds = self::getCategorySubtreeIds($categoryId);
+            if (!empty($catIds)) {
+                $ins      = implode(',', array_map('intval', $catIds));
+                $catWhere = "AND category IN ($ins)";
+            }
         }
 
         $sql = "
@@ -46,6 +55,7 @@ class MoodleData
             FROM {$p}course
             WHERE $regexCond
               AND visible = 1
+              $catWhere
             ORDER BY year_sem DESC
         ";
         return Database::query($sql)->fetchAll();

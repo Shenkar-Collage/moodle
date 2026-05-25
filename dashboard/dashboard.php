@@ -11,9 +11,9 @@ $adminCatId = (int)Settings::get('admin_category_id', 0);
 $userCatId  = (int)($user['category_id'] ?? 0);
 $categoryId = $isAdmin ? $adminCatId : $userCatId;
 
-// Semester filter (only used when no category is set)
-$semesterOptions = ($categoryId > 0) ? [] : MoodleData::getAvailableSemesters();
-$currentSem      = ($categoryId > 0) ? '' : ($_GET['sem'] ?? ($semesterOptions[0]['year_sem'] ?? ''));
+// Semester filter — always shown, filtered by category when set
+$semesterOptions = MoodleData::getAvailableSemesters($categoryId);
+$currentSem      = $_GET['sem'] ?? ($semesterOptions[0]['year_sem'] ?? '');
 
 // Load course stats
 try {
