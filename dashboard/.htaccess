@@ -1,0 +1,17 @@
+# Block direct access to sensitive files
+<Files "config.php">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<FilesMatch "\.(json)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<DirectoryMatch "^.*(src|data)$">
+    Order allow,deny
+    Deny from all
+</DirectoryMatch>
+
+Options -Indexes
