@@ -68,6 +68,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? ''))
             $message = 'יש למלא את כל השדות.';
         }
 
+    } elseif ($action === 'edit' && isset($_POST['uid'])) {
+        $uid        = (int)$_POST['uid'];
+        $name       = trim($_POST['name'] ?? '');
+        $depts      = $_POST['depts'] ?? [];
+        $categoryId = (int)($_POST['category_id'] ?? 0);
+        if ($name) {
+            foreach ($users as &$u) {
+                if (($u['id'] ?? 0) === $uid) {
+                    $u['name']              = $name;
+                    $u['department_codes']  = array_values(array_filter($depts));
+                    $u['category_id']       = $categoryId;
+                }
+            }
+            unset($u);
+            try {
+                Auth::saveUsers($users);
+                $message = 'פרטי המשתמש עודכנו בהצלחה.';
+            } catch (RuntimeException $e) {
+                $message = 'שגיאה: ' . $e->getMessage();
+            }
+        } else {
+            $message = 'שם לא יכול להיות ריק.';
+        }
+
     } elseif ($action === 'change_password' && isset($_POST['uid'])) {
         $uid     = (int)$_POST['uid'];
         $newpass = $_POST['new_password'] ?? '';
@@ -226,6 +250,11 @@ include __DIR__ . '/../views/layout_header.php';
           </td>
           <td class="text-center">
             <div class="d-flex gap-1 justify-content-center">
+              <!-- Edit -->
+              <button class="btn-sm-ghost" title="עריכה"
+                      data-bs-toggle="modal" data-bs-target="#editModal<?= (int)($u['id'] ?? 0) ?>">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
               <!-- Toggle active -->
               <form method="POST" class="d-inline">
                 <input type="hidden" name="_csrf"   value="<?= h(csrf_token()) ?>">
@@ -253,6 +282,62 @@ include __DIR__ . '/../views/layout_header.php';
             </div>
           </td>
         </tr>
+
+        <!-- Edit modal for this user -->
+        <div class="modal fade" id="editModal<?= (int)($u['id'] ?? 0) ?>" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h6 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>עריכת משתמש — <?= h($u['name']) ?></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <form method="POST">
+                <div class="modal-body">
+                  <input type="hidden" name="_csrf"  value="<?= h(csrf_token()) ?>">
+                  <input type="hidden" name="action" value="edit">
+                  <input type="hidden" name="uid"    value="<?= (int)($u['id'] ?? 0) ?>">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">שם מלא</label>
+                    <input type="text" name="name" class="form-control" value="<?= h($u['name']) ?>" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold"><i class="fa-solid fa-folder-tree me-1 text-primary"></i>קטגוריית Moodle</label>
+                    <select name="category_id" class="form-select">
+                      <option value="0">— ללא קטגוריה —</option>
+                      <?php foreach ($categoriesFlat as $cat): ?>
+                        <option value="<?= (int)$cat['id'] ?>" <?= (int)($u['category_id'] ?? 0) === $cat['id'] ? 'selected' : '' ?>>
+                          <?= h($cat['name']) ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                  </div>
+                  <div class="mb-1">
+                    <label class="form-label fw-semibold">מחלקות</label>
+                    <div class="row g-2">
+                      <?php foreach (DEPARTMENTS as $code => $dname): ?>
+                      <div class="col-6 col-md-4">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="depts[]"
+                                 value="<?= h($code) ?>"
+                                 id="ed_<?= (int)($u['id'] ?? 0) ?>_<?= h($code) ?>"
+                                 <?= in_array($code, $u['department_codes'] ?? []) ? 'checked' : '' ?>>
+                          <label class="form-check-label small" for="ed_<?= (int)($u['id'] ?? 0) ?>_<?= h($code) ?>">
+                            <strong><?= h($code) ?></strong> — <?= h($dname) ?>
+                          </label>
+                        </div>
+                      </div>
+                      <?php endforeach; ?>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ביטול</button>
+                  <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>שמור</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
 
         <!-- Password modal for this user -->
         <div class="modal fade" id="pwModal<?= (int)($u['id'] ?? 0) ?>" tabindex="-1">

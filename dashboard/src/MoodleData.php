@@ -128,31 +128,30 @@ class MoodleData
 
         $deptExpr = self::splitPart('c.shortname', 3);
         $params   = [];
+        $wheres   = [];
 
+        // Category filter (can combine with dept filter)
         if ($categoryId > 0) {
             $catIds = self::getCategorySubtreeIds($categoryId);
             if (empty($catIds)) return [];
-            $ins        = implode(',', array_map('intval', $catIds));
-            $scopeWhere = "c.category IN ($ins)";
-        } else {
-            $deptWhere  = '1=1';
-            $deptParams = [];
-            if (!empty($deptCodes)) {
-                $ph         = implode(',', array_fill(0, count($deptCodes), '?'));
-                $deptWhere  = "SUBSTRING($deptExpr, 1, 2) IN ($ph)";
-                $deptParams = $deptCodes;
-            }
-
-            $semWhere  = '1=1';
-            $semParams = [];
-            if ($semFilter !== '') {
-                $semWhere  = "c.shortname LIKE ? ESCAPE '\\\\'";
-                $semParams = [str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $semFilter) . '_%'];
-            }
-
-            $scopeWhere = "$deptWhere AND $semWhere";
-            $params     = array_merge($deptParams, $semParams);
+            $ins      = implode(',', array_map('intval', $catIds));
+            $wheres[] = "c.category IN ($ins)";
         }
+
+        // Department filter (works alone or combined with category)
+        if (!empty($deptCodes)) {
+            $ph       = implode(',', array_fill(0, count($deptCodes), '?'));
+            $wheres[] = "SUBSTRING($deptExpr, 1, 2) IN ($ph)";
+            $params   = array_merge($params, $deptCodes);
+        }
+
+        // Semester filter
+        if ($semFilter !== '') {
+            $wheres[] = "c.shortname LIKE ? ESCAPE '\\\\'";
+            $params[] = str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $semFilter) . '_%';
+        }
+
+        $scopeWhere = empty($wheres) ? '1=1' : implode(' AND ', $wheres);
 
         // PostgreSQL uses ::integer cast; MySQL/MariaDB FLOOR() already returns integer
         $daysCast = self::isPg() ? '::integer' : '';
