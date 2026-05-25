@@ -2,25 +2,49 @@
 
 class MoodleData
 {
-    private static function p(): string
+    private static function p(): string { return Database::p(); }
+    private static function isPg(): bool { return Database::type() === 'pgsql'; }
+
+    /**
+     * Returns the SQL expression to extract the Nth '_'-delimited segment
+     * from a column (1-indexed).
+     *   PostgreSQL: SPLIT_PART(col, '_', n)
+     *   MySQL/MariaDB: SUBSTRING_INDEX / nested trick
+     */
+    private static function splitPart(string $col, int $n): string
     {
-        return Database::p();
+        if (self::isPg()) {
+            return "SPLIT_PART($col, '_', $n)";
+        }
+        if ($n === 1) {
+            return "SUBSTRING_INDEX($col, '_', 1)";
+        }
+        return "SUBSTRING_INDEX(SUBSTRING_INDEX($col, '_', $n), '_', -1)";
     }
 
     /**
      * Returns distinct year-semester combinations found in course shortnames.
-     * Shortname format: {year}_{sem}_{coursenum}
+     * Shortname format: {year}_{sem}_{coursenum5+digits}
      */
     public static function getAvailableSemesters(): array
     {
-        $p = self::p();
+        $p    = self::p();
+        $year = self::splitPart('shortname', 1);
+        $sem  = self::splitPart('shortname', 2);
+
+        if (self::isPg()) {
+            $regexCond = "shortname ~ '^\\S+_\\S+_\\d{5,}'";
+        } else {
+            $regexCond = "shortname REGEXP '^[^_]+_[^_]+_[0-9]{5}'";
+        }
+
         $sql = "
             SELECT DISTINCT
-                SPLIT_PART(shortname, '_', 1) AS year,
-                SPLIT_PART(shortname, '_', 2) AS semester,
-                SPLIT_PART(shortname, '_', 1) || '_' || SPLIT_PART(shortname, '_', 2) AS year_sem
+                $year AS year,
+                $sem  AS semester,
+                CONCAT($year, '_', $sem) AS year_sem
             FROM {$p}course
-            WHERE shortname ~ '^\S+_\S+_\d{5,}'
+            WHERE $regexCond
               AND visible = 1
             ORDER BY year_sem DESC
         ";
@@ -28,11 +52,11 @@ class MoodleData
     }
 
     /**
-     * Returns all visible course categories ordered by path.
+     * Returns all visible Moodle course categories ordered by path.
      */
     public static function getCategories(): array
     {
-        $p = self::p();
+        $p   = self::p();
         $sql = "
             SELECT id, name, parent, depth, path
             FROM {$p}course_categories
@@ -43,18 +67,16 @@ class MoodleData
     }
 
     /**
-     * Returns a flat array of categories with indented names for use in dropdowns.
+     * Returns a flat list of categories with indented names for dropdowns.
      */
     public static function getCategoriesFlat(): array
     {
-        $cats = self::getCategories();
         $result = [];
-        foreach ($cats as $cat) {
-            $depth  = (int)($cat['depth'] ?? 0);
-            $indent = str_repeat('— ', $depth);
+        foreach (self::getCategories() as $cat) {
+            $depth    = (int)($cat['depth'] ?? 0);
             $result[] = [
                 'id'    => (int)$cat['id'],
-                'name'  => $indent . $cat['name'],
+                'name'  => str_repeat('— ', $depth) . $cat['name'],
                 'depth' => $depth,
             ];
         }
@@ -62,12 +84,12 @@ class MoodleData
     }
 
     /**
-     * Returns all category IDs in the subtree rooted at $rootId (inclusive),
-     * using a PostgreSQL recursive CTE.
+     * Returns all category IDs in the subtree rooted at $rootId (inclusive).
+     * WITH RECURSIVE is supported in PostgreSQL and MariaDB 10.2.2+.
      */
     public static function getCategorySubtreeIds(int $rootId): array
     {
-        $p = self::p();
+        $p   = self::p();
         $sql = "
             WITH RECURSIVE cat_tree AS (
                 SELECT id FROM {$p}course_categories WHERE id = ?
@@ -83,42 +105,38 @@ class MoodleData
     }
 
     /**
-     * Returns course list with activity stats.
+     * Returns course list with student-activity statistics.
      *
-     * @param array  $deptCodes   e.g. ['35','44'] – empty = all departments (admin)
-     * @param string $semFilter   e.g. 'תשפו_ב' – empty = all semesters
-     * @param int    $categoryId  if > 0, filter by category subtree instead of semFilter+deptCodes
+     * @param array  $deptCodes  e.g. ['35','44'] — empty = all depts (admin)
+     * @param string $semFilter  e.g. 'תשפו_ב' — empty = all semesters
+     * @param int    $categoryId if > 0, filter by Moodle category subtree
      */
     public static function getCourseStats(array $deptCodes = [], string $semFilter = '', int $categoryId = 0): array
     {
         $p    = self::p();
         $ts30 = time() - 30 * 86400;
 
-        $params = [];
+        $deptExpr = self::splitPart('c.shortname', 3);
+        $params   = [];
 
-        // Build category / dept / sem filter
         if ($categoryId > 0) {
             $catIds = self::getCategorySubtreeIds($categoryId);
-            if (empty($catIds)) {
-                return [];
-            }
+            if (empty($catIds)) return [];
             $ins        = implode(',', array_map('intval', $catIds));
             $scopeWhere = "c.category IN ($ins)";
         } else {
-            // Department filter
             $deptWhere  = '1=1';
             $deptParams = [];
             if (!empty($deptCodes)) {
-                $ins        = implode(',', array_fill(0, count($deptCodes), '?'));
-                $deptWhere  = "SUBSTRING(SPLIT_PART(c.shortname, '_', 3), 1, 2) IN ($ins)";
+                $ph         = implode(',', array_fill(0, count($deptCodes), '?'));
+                $deptWhere  = "SUBSTRING($deptExpr, 1, 2) IN ($ph)";
                 $deptParams = $deptCodes;
             }
 
-            // Semester filter
             $semWhere  = '1=1';
             $semParams = [];
             if ($semFilter !== '') {
-                $semWhere  = "c.shortname LIKE ? ESCAPE '\\'";
+                $semWhere  = "c.shortname LIKE ? ESCAPE '\\\\'";
                 $semParams = [str_replace(['\\', '_', '%'], ['\\\\', '\\_', '\\%'], $semFilter) . '_%'];
             }
 
@@ -126,12 +144,15 @@ class MoodleData
             $params     = array_merge($deptParams, $semParams);
         }
 
+        // PostgreSQL uses ::integer cast; MySQL/MariaDB FLOOR() already returns integer
+        $daysCast = self::isPg() ? '::integer' : '';
+
         $sql = "
             WITH enrolled AS (
                 SELECT DISTINCT ue.userid, en.courseid
                 FROM {$p}enrol en
                 JOIN {$p}user_enrolments ue ON ue.enrolid = en.id AND ue.status = 0
-                JOIN {$p}user u ON u.id = ue.userid AND u.deleted = 0
+                JOIN {$p}user u             ON u.id = ue.userid AND u.deleted = 0
                 WHERE en.status = 0
             )
             SELECT
@@ -139,16 +160,16 @@ class MoodleData
                 c.fullname,
                 c.shortname,
                 c.idnumber,
-                SUBSTRING(SPLIT_PART(c.shortname, '_', 3), 1, 2)                            AS dept_code,
-                COUNT(e.userid)                                                              AS total_students,
+                SUBSTRING($deptExpr, 1, 2)                                          AS dept_code,
+                COUNT(e.userid)                                                      AS total_students,
                 COUNT(CASE WHEN ula.lastaccess IS NOT NULL AND ula.lastaccess > $ts30
-                           THEN 1 END)                                                       AS active_30d,
+                           THEN 1 END)                                               AS active_30d,
                 COUNT(CASE WHEN ula.lastaccess IS NOT NULL AND ula.lastaccess <= $ts30
-                           THEN 1 END)                                                       AS inactive_30d,
-                COUNT(CASE WHEN ula.lastaccess IS NULL THEN 1 END)                           AS never_accessed,
+                           THEN 1 END)                                               AS inactive_30d,
+                COUNT(CASE WHEN ula.lastaccess IS NULL THEN 1 END)                   AS never_accessed,
                 (SELECT COUNT(DISTINCT cm.module)
                  FROM {$p}course_modules cm
-                 WHERE cm.course = c.id AND cm.deletioninprogress = 0)                       AS component_count
+                 WHERE cm.course = c.id AND cm.deletioninprogress = 0)               AS component_count
             FROM {$p}course c
             LEFT JOIN enrolled e   ON e.courseid  = c.id
             LEFT JOIN {$p}user_lastaccess ula ON ula.userid = e.userid AND ula.courseid = c.id
@@ -162,10 +183,7 @@ class MoodleData
     }
 
     /**
-     * Returns assignment submission/grading stats per course.
-     *
-     * @param array $courseIds  list of integer course IDs
-     * @return array  keyed by course ID
+     * Returns assignment submission/grading stats per course, keyed by course ID.
      */
     public static function getCourseAssignStats(array $courseIds): array
     {
@@ -177,15 +195,15 @@ class MoodleData
         $sql = "
             SELECT
                 a.course,
-                COUNT(DISTINCT a.id)                                                                         AS assign_count,
+                COUNT(DISTINCT a.id)                                                           AS assign_count,
                 COUNT(DISTINCT CASE WHEN sub.status = 'submitted' AND sub.latest = 1
-                                    THEN sub.userid END)                                                      AS submitted_unique,
+                                    THEN sub.userid END)                                        AS submitted_unique,
                 COUNT(DISTINCT CASE WHEN ag.grade >= 0 AND ag.latest = 1
-                                    THEN ag.userid END)                                                       AS graded_unique,
+                                    THEN ag.userid END)                                         AS graded_unique,
                 (SELECT COUNT(DISTINCT ue2.userid)
                  FROM {$p}enrol en2
                  JOIN {$p}user_enrolments ue2 ON ue2.enrolid = en2.id AND ue2.status = 0
-                 WHERE en2.courseid = a.course AND en2.status = 0)                                            AS enrolled
+                 WHERE en2.courseid = a.course AND en2.status = 0)                              AS enrolled
             FROM {$p}assign a
             LEFT JOIN {$p}assign_submission sub ON sub.assignment = a.id
             LEFT JOIN {$p}assign_grades     ag  ON ag.assignment  = a.id
@@ -198,7 +216,7 @@ class MoodleData
     }
 
     /**
-     * Returns unique module types used in a course (for the popup).
+     * Returns unique module types used in a course (for the components popup).
      */
     public static function getCourseComponents(int $courseId): array
     {
@@ -215,12 +233,15 @@ class MoodleData
     }
 
     /**
-     * Returns students enrolled in a course with activity details.
+     * Returns students enrolled in a course with last-access and total-time data.
      */
     public static function getCourseStudents(int $courseId): array
     {
         $p   = self::p();
         $now = time();
+
+        // PostgreSQL uses ::integer cast; MySQL/MariaDB FLOOR() is already numeric
+        $daysCast = self::isPg() ? '::integer' : '';
 
         $sql = "
             WITH log_time AS (
@@ -243,13 +264,13 @@ class MoodleData
                 CASE
                     WHEN ula.lastaccess IS NULL THEN NULL
                     ELSE FLOOR(($now - ula.lastaccess) / 86400)
-                END::integer                          AS days_since_access,
-                COALESCE(lt.total_minutes, 0)         AS total_minutes
+                END{$daysCast}                          AS days_since_access,
+                COALESCE(lt.total_minutes, 0)           AS total_minutes
             FROM {$p}user u
             JOIN {$p}user_enrolments ue ON ue.userid = u.id AND ue.status = 0
-            JOIN {$p}enrol en ON en.id = ue.enrolid AND en.courseid = ? AND en.status = 0
+            JOIN {$p}enrol en           ON en.id = ue.enrolid AND en.courseid = ? AND en.status = 0
             LEFT JOIN {$p}user_lastaccess ula ON ula.userid = u.id AND ula.courseid = ?
-            LEFT JOIN log_time lt ON lt.userid = u.id
+            LEFT JOIN log_time lt             ON lt.userid = u.id
             WHERE u.deleted = 0
             ORDER BY u.lastname, u.firstname
         ";
@@ -257,57 +278,15 @@ class MoodleData
     }
 
     /**
-     * Returns a course by ID.
+     * Returns a single course by ID (id, fullname, shortname, idnumber).
      */
     public static function getCourse(int $courseId): ?array
     {
         $p   = self::p();
-        $sql = "SELECT id, fullname, shortname, idnumber FROM {$p}course WHERE id = ?";
-        $row = Database::query($sql, [$courseId])->fetch();
+        $row = Database::query(
+            "SELECT id, fullname, shortname, idnumber FROM {$p}course WHERE id = ?",
+            [$courseId]
+        )->fetch();
         return $row ?: null;
-    }
-
-    /**
-     * Returns activity summary for a department (used by pie chart).
-     *
-     * @return array{active: int, needs_followup: int, inactive: int}
-     */
-    public static function getDepartmentActivitySummary(array $deptCodes, string $semFilter = ''): array
-    {
-        $courses    = self::getCourseStats($deptCodes, $semFilter);
-        $total30    = 0;
-        $inactive30 = 0;
-        $never      = 0;
-
-        foreach ($courses as $c) {
-            $total30    += (int)$c['active_30d'];
-            $inactive30 += (int)$c['inactive_30d'];
-            $never      += (int)$c['never_accessed'];
-        }
-
-        return [
-            'active'         => $total30,
-            'needs_followup' => $inactive30,
-            'inactive'       => $never,
-        ];
-    }
-
-    /**
-     * Returns per-course active/total ratio for the pie chart (course-level).
-     */
-    public static function getDepartmentCoursePieData(array $deptCodes, string $semFilter = ''): array
-    {
-        $courses = self::getCourseStats($deptCodes, $semFilter);
-        $labels  = $values = $colors = [];
-        $palette = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'];
-        $i       = 0;
-        foreach ($courses as $c) {
-            if ((int)$c['total_students'] === 0) continue;
-            $labels[] = $c['fullname'];
-            $values[] = (int)$c['active_30d'];
-            $colors[] = $palette[$i % count($palette)];
-            $i++;
-        }
-        return compact('labels', 'values', 'colors');
     }
 }
