@@ -1,17 +1,14 @@
 # Block direct access to sensitive files
 <Files "config.php">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </Files>
 
-<FilesMatch "\.(json)$">
-    Order allow,deny
-    Deny from all
+<FilesMatch "\.json$">
+    Require all denied
 </FilesMatch>
 
-<DirectoryMatch "^.*(src|data)$">
-    Order allow,deny
-    Deny from all
-</DirectoryMatch>
+# Block direct access to src/ and data/ subdirectories
+RewriteEngine On
+RewriteRule ^(src|data)/ - [F,L]
 
 Options -Indexes
