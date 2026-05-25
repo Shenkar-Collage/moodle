@@ -22,10 +22,11 @@ class Auth
             password_verify($password, $cfg['admin']['password_hash'])
         ) {
             self::setSession([
-                'username'    => $username,
-                'role'        => 'admin',
-                'name'        => $cfg['admin']['name'] ?? 'מנהל מערכת',
-                'departments' => [],
+                'username'         => $username,
+                'role'             => 'admin',
+                'name'             => $cfg['admin']['name'] ?? 'מנהל מערכת',
+                'department_codes' => [],
+                'category_id'      => 0,
             ]);
             return true;
         }
@@ -38,10 +39,11 @@ class Auth
                 password_verify($password, $user['password_hash'])
             ) {
                 self::setSession([
-                    'username'    => $username,
-                    'role'        => 'head',
-                    'name'        => $user['name'],
-                    'departments' => $user['department_codes'],
+                    'username'         => $username,
+                    'role'             => 'head',
+                    'name'             => $user['name'],
+                    'department_codes' => $user['department_codes'] ?? [],
+                    'category_id'      => (int)($user['category_id'] ?? 0),
                 ]);
                 return true;
             }
@@ -104,7 +106,7 @@ class Auth
     public static function canViewDepartment(string $deptCode): bool
     {
         if (self::isAdmin()) return true;
-        return in_array($deptCode, $_SESSION['user']['departments'] ?? [], true);
+        return in_array($deptCode, $_SESSION['user']['department_codes'] ?? [], true);
     }
 
     public static function loadUsers(): array

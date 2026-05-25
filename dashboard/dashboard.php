@@ -285,7 +285,10 @@ include __DIR__ . '/views/layout_header.php';
             $gPct = $sub ? round($grad/$sub*100) : 0;
           ?>
             <tr>
-              <td style="font-size:13px;"><?= h($c['fullname']) ?></td>
+              <td style="font-size:13px;">
+                <div style="font-weight:600;"><?= h($c['shortname']) ?></div>
+                <div style="font-size:11px;color:var(--muted);"><?= h($c['fullname']) ?></div>
+              </td>
               <td class="text-center"><?= (int)$a['assign_count'] ?></td>
               <td class="text-center">
                 <span class="<?= $sPct < 50 ? 'text-danger fw-bold' : ($sPct < 80 ? 'text-warning fw-bold' : 'text-success fw-bold') ?>">
