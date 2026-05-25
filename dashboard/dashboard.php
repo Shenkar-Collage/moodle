@@ -11,8 +11,8 @@ $adminCatId = (int)Settings::get('admin_category_id', 0);
 $userCatId  = (int)($user['category_id'] ?? 0);
 $categoryId = $isAdmin ? $adminCatId : $userCatId;
 
-// Semester filter — always shown, filtered by category when set
-$semesterOptions = MoodleData::getAvailableSemesters($categoryId);
+// Semester filter — filtered by same category+dept as the courses
+$semesterOptions = MoodleData::getAvailableSemesters($categoryId, $deptCodes);
 $currentSem      = $_GET['sem'] ?? ($semesterOptions[0]['year_sem'] ?? '');
 
 // Load course stats
@@ -355,8 +355,8 @@ include __DIR__ . '/views/layout_header.php';
       ?>
         <tr>
           <td>
-            <div style="font-weight:600;font-size:13px;"><?= h($c['fullname']) ?></div>
-            <div style="font-size:11px;color:var(--muted);"><?= h($c['shortname']) ?></div>
+            <div style="font-weight:600;font-size:13px;"><?= h($c['shortname']) ?></div>
+            <div style="font-size:11px;color:var(--muted);"><?= h($c['fullname']) ?></div>
           </td>
           <td style="font-size:13px;"><?= h($c['idnumber'] ?? '—') ?></td>
           <?php if ($isAdmin): ?>

@@ -26,11 +26,12 @@ class MoodleData
      * Returns distinct year-semester combinations found in course shortnames.
      * Shortname format: {year}_{sem}_{coursenum5+digits}
      */
-    public static function getAvailableSemesters(int $categoryId = 0): array
+    public static function getAvailableSemesters(int $categoryId = 0, array $deptCodes = []): array
     {
-        $p    = self::p();
-        $year = self::splitPart('shortname', 1);
-        $sem  = self::splitPart('shortname', 2);
+        $p        = self::p();
+        $year     = self::splitPart('shortname', 1);
+        $sem      = self::splitPart('shortname', 2);
+        $deptExpr = self::splitPart('shortname', 3);
 
         if (self::isPg()) {
             $regexCond = "shortname ~ '^\\\\S+_\\\\S+_\\\\d{5,}'";
@@ -38,27 +39,34 @@ class MoodleData
             $regexCond = "shortname REGEXP '^[^_]+_[^_]+_[0-9]{5}'";
         }
 
-        $catWhere = '';
+        $wheres = ["$regexCond", "visible = 1"];
+        $params = [];
+
         if ($categoryId > 0) {
             $catIds = self::getCategorySubtreeIds($categoryId);
             if (!empty($catIds)) {
                 $ins      = implode(',', array_map('intval', $catIds));
-                $catWhere = "AND category IN ($ins)";
+                $wheres[] = "category IN ($ins)";
             }
         }
 
-        $sql = "
+        if (!empty($deptCodes)) {
+            $ph       = implode(',', array_fill(0, count($deptCodes), '?'));
+            $wheres[] = "SUBSTRING($deptExpr, 1, 2) IN ($ph)";
+            $params   = $deptCodes;
+        }
+
+        $where = implode(' AND ', $wheres);
+        $sql   = "
             SELECT DISTINCT
                 $year AS year,
                 $sem  AS semester,
                 CONCAT($year, '_', $sem) AS year_sem
             FROM {$p}course
-            WHERE $regexCond
-              AND visible = 1
-              $catWhere
+            WHERE $where
             ORDER BY year_sem DESC
         ";
-        return Database::query($sql)->fetchAll();
+        return Database::query($sql, $params)->fetchAll();
     }
 
     /**
