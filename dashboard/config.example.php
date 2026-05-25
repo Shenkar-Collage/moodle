@@ -28,5 +28,6 @@ return [
         'institution'  => 'שנקר - מכללה להנדסה ועיצוב',
         'session_name' => 'shenkar_dashboard',
         'base_url'     => '/dashboard',  // URL path to this folder
+        'moodle_url'   => 'https://yoursite.ac.il',  // Base URL of your Moodle installation
     ],
 ];

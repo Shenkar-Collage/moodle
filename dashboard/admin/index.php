@@ -5,6 +5,13 @@ Auth::requireAdmin();
 $users   = Auth::loadUsers();
 $message = '';
 
+// Load categories for dropdown
+try {
+    $categoriesFlat = MoodleData::getCategoriesFlat();
+} catch (Exception $e) {
+    $categoriesFlat = [];
+}
+
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? '')) {
     $action = $_POST['action'] ?? '';
@@ -27,10 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? ''))
         $message = 'סטטוס המשתמש עודכן.';
 
     } elseif ($action === 'add') {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $name     = trim($_POST['name'] ?? '');
-        $depts    = $_POST['depts'] ?? [];
+        $username   = trim($_POST['username'] ?? '');
+        $password   = $_POST['password'] ?? '';
+        $name       = trim($_POST['name'] ?? '');
+        $depts      = $_POST['depts'] ?? [];
+        $categoryId = (int)($_POST['category_id'] ?? 0);
 
         if ($username && $password && $name) {
             // Check username unique
@@ -45,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? ''))
                     'password_hash'   => password_hash($password, PASSWORD_BCRYPT),
                     'name'            => $name,
                     'department_codes'=> array_values(array_filter($depts)),
+                    'category_id'     => $categoryId,
                     'active'          => true,
                 ];
                 Auth::saveUsers($users);
@@ -74,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf($_POST['_csrf'] ?? ''))
     $users = Auth::loadUsers(); // reload
 }
 
-$pageTitle      = 'ניהול משתמשים';
+$pageTitle       = 'ניהול משתמשים';
 $semesterOptions = [];
 include __DIR__ . '/../views/layout_header.php';
 ?>
@@ -112,8 +121,23 @@ include __DIR__ . '/../views/layout_header.php';
             <label class="form-label fw-semibold">שם מלא <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control" placeholder="שם ראש החוג" required>
           </div>
+
+          <!-- Moodle category -->
           <div class="col-12">
-            <label class="form-label fw-semibold">מחלקות</label>
+            <label class="form-label fw-semibold">
+              <i class="fa-solid fa-folder-tree me-1 text-primary"></i>קטגוריית Moodle
+            </label>
+            <select name="category_id" class="form-select">
+              <option value="0">— ללא קטגוריה (השתמש בקודי מחלקה בלבד) —</option>
+              <?php foreach ($categoriesFlat as $cat): ?>
+                <option value="<?= (int)$cat['id'] ?>"><?= h($cat['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <div class="form-text text-muted">אם תבחר קטגוריה, לוח הבקרה של ראש החוג יסנן לפי קטגוריה זו ותת-הקטגוריות שלה.</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">מחלקות (לפי קידוד shortname)</label>
             <div class="row g-2">
               <?php foreach (DEPARTMENTS as $code => $name): ?>
               <div class="col-6 col-md-4 col-lg-3">
@@ -128,6 +152,7 @@ include __DIR__ . '/../views/layout_header.php';
               <?php endforeach; ?>
             </div>
           </div>
+
           <div class="col-12">
             <button type="submit" class="btn-primary-custom">
               <i class="fa-solid fa-plus"></i> הוסף משתמש
@@ -153,6 +178,7 @@ include __DIR__ . '/../views/layout_header.php';
           <th>שם מלא</th>
           <th>שם משתמש</th>
           <th>מחלקות</th>
+          <th>קטגוריה</th>
           <th class="text-center">סטטוס</th>
           <th class="text-center">פעולות</th>
         </tr>
@@ -166,6 +192,25 @@ include __DIR__ . '/../views/layout_header.php';
             <?php foreach ($u['department_codes'] ?? [] as $dc): ?>
               <span class="dept-tag"><?= h($dc) ?> — <?= h(DEPARTMENTS[$dc] ?? $dc) ?></span>
             <?php endforeach; ?>
+            <?php if (empty($u['department_codes'])): ?>
+              <span class="text-muted small">—</span>
+            <?php endif; ?>
+          </td>
+          <td>
+            <?php
+            $uCatId   = (int)($u['category_id'] ?? 0);
+            $uCatName = '';
+            if ($uCatId > 0) {
+                foreach ($categoriesFlat as $cat) {
+                    if ($cat['id'] === $uCatId) { $uCatName = $cat['name']; break; }
+                }
+            }
+            ?>
+            <?php if ($uCatId > 0): ?>
+              <span class="small"><i class="fa-solid fa-folder-open text-primary me-1"></i><?= h($uCatName ?: '#' . $uCatId) ?></span>
+            <?php else: ?>
+              <span class="text-muted small">—</span>
+            <?php endif; ?>
           </td>
           <td class="text-center">
             <?php if ($u['active'] ?? false): ?>
@@ -230,7 +275,7 @@ include __DIR__ . '/../views/layout_header.php';
       <?php endforeach; ?>
 
       <?php if (empty($users)): ?>
-        <tr><td colspan="5" class="text-center py-5 text-muted">
+        <tr><td colspan="6" class="text-center py-5 text-muted">
           <i class="fa-solid fa-users-slash fa-2x mb-2 d-block"></i>
           אין ראשי חוג רשומים עדיין
         </td></tr>
@@ -244,8 +289,9 @@ include __DIR__ . '/../views/layout_header.php';
 <div class="content-card mt-4 p-4" style="border-right:4px solid var(--warning);background:#fffbeb;">
   <h6 class="fw-700 mb-2"><i class="fa-solid fa-circle-info text-warning me-2"></i>מידע למנהל</h6>
   <ul class="mb-0 small text-muted">
-    <li>ראשי חוג יוכלו לראות רק את המחלקות שהוגדרו להם.</li>
-    <li>ניתן להצמיד ראש חוג למספר מחלקות בו-זמנית.</li>
+    <li>ראשי חוג יוכלו לראות רק את המחלקות / הקטגוריות שהוגדרו להם.</li>
+    <li>ניתן להצמיד ראש חוג למספר מחלקות בו-זמנית, וגם לקטגוריית Moodle.</li>
+    <li>אם מוגדרת קטגוריית Moodle — הסינון יהיה לפי הקטגוריה (כולל תת-קטגוריות), ללא תלות בקודי המחלקה.</li>
     <li>לשינוי סיסמת האדמין — ערוך את <code>config.php</code> ועדכן את <code>password_hash</code>.</li>
     <li>כדי לייצר hash חדש: <code>php -r "echo password_hash('PASSWORD', PASSWORD_BCRYPT);"</code></li>
   </ul>

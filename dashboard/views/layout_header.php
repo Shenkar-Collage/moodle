@@ -42,8 +42,13 @@
       </li>
       <?php if (Auth::isAdmin()): ?>
       <li>
-        <a href="<?= BASE_URL ?>/admin/index.php" class="<?= (strpos($_SERVER['PHP_SELF'], '/admin/') !== false) ? 'active' : '' ?>">
+        <a href="<?= BASE_URL ?>/admin/index.php" class="<?= (strpos($_SERVER['PHP_SELF'], '/admin/') !== false && basename($_SERVER['PHP_SELF']) === 'index.php') ? 'active' : '' ?>">
           <i class="fa-solid fa-users-gear"></i> ניהול משתמשים
+        </a>
+      </li>
+      <li>
+        <a href="<?= BASE_URL ?>/admin/settings.php" class="<?= (basename($_SERVER['PHP_SELF']) === 'settings.php') ? 'active' : '' ?>">
+          <i class="fa-solid fa-gear"></i> הגדרות
         </a>
       </li>
       <?php endif; ?>

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/src/bootstrap.php';
 Auth::requireLogin();
 
-$courseId  = (int)($_GET['course_id'] ?? 0);
+$courseId   = (int)($_GET['course_id'] ?? 0);
 $currentSem = $_GET['sem'] ?? '';
 
 if ($courseId <= 0) {
@@ -31,13 +31,13 @@ try {
 }
 
 // Counts for header
-$total  = count($students);
-$active = count(array_filter($students, fn($s) => $s['days_since_access'] !== null && (int)$s['days_since_access'] <= 30));
-$warn   = count(array_filter($students, fn($s) => $s['days_since_access'] !== null && (int)$s['days_since_access'] > 30 && (int)$s['days_since_access'] <= 90));
-$never  = count(array_filter($students, fn($s) => $s['days_since_access'] === null));
+$total    = count($students);
+$active   = count(array_filter($students, fn($s) => $s['days_since_access'] !== null && (int)$s['days_since_access'] <= 30));
+$warn     = count(array_filter($students, fn($s) => $s['days_since_access'] !== null && (int)$s['days_since_access'] > 30 && (int)$s['days_since_access'] <= 90));
+$never    = count(array_filter($students, fn($s) => $s['days_since_access'] === null));
 $inactive = count(array_filter($students, fn($s) => $s['days_since_access'] !== null && (int)$s['days_since_access'] > 90));
 
-$pageTitle = 'תלמידים — ' . ($course['fullname'] ?? '');
+$pageTitle       = 'תלמידים — ' . ($course['fullname'] ?? '');
 $semesterOptions = MoodleData::getAvailableSemesters();
 include __DIR__ . '/views/layout_header.php';
 ?>
@@ -64,12 +64,18 @@ include __DIR__ . '/views/layout_header.php';
       <h4 class="mb-1 fw-700"><?= h($course['fullname'] ?? '') ?></h4>
       <div class="text-muted" style="font-size:13px;">
         <span class="me-3"><i class="fa-solid fa-tag me-1"></i><?= h($course['shortname'] ?? '') ?></span>
+        <?php if (!empty($course['idnumber'])): ?>
+          <span class="me-3"><i class="fa-solid fa-hashtag me-1"></i><?= h($course['idnumber']) ?></span>
+        <?php endif; ?>
         <span><i class="fa-solid fa-building me-1"></i><?= h(DEPARTMENTS[$deptCode] ?? $deptCode) ?></span>
       </div>
     </div>
     <div class="col-auto d-flex gap-2">
+      <button onclick="exportExcel('students-table','תלמידים')" class="btn-outline-custom">
+        <i class="fa-solid fa-file-excel"></i> Excel
+      </button>
       <button onclick="exportCsv()" class="btn-outline-custom">
-        <i class="fa-solid fa-file-csv"></i> ייצוא CSV
+        <i class="fa-solid fa-file-csv"></i> CSV
       </button>
       <button onclick="window.print()" class="btn-sm-ghost">
         <i class="fa-solid fa-print"></i> הדפסה
@@ -124,9 +130,11 @@ include __DIR__ . '/views/layout_header.php';
           <th>#</th>
           <th>שם פרטי</th>
           <th>שם משפחה</th>
+          <th>אימייל</th>
           <th>ימים מאז כניסה אחרונה</th>
           <th>זמן שימוש טוטאלי</th>
           <th>סטטוס פעילות</th>
+          <th class="no-sort no-export">פעולות</th>
         </tr>
       </thead>
       <tbody>
@@ -134,25 +142,34 @@ include __DIR__ . '/views/layout_header.php';
         $days   = ($s['days_since_access'] !== null) ? (int)$s['days_since_access'] : null;
         $status = get_activity_status($days);
         $mins   = (float)($s['total_minutes'] ?? 0);
+        $userId = (int)($s['id'] ?? 0);
 
-        // Determine row data-filter value
         if ($days === null) $filterVal = 'never';
         elseif ($days <= 30) $filterVal = 'active';
         elseif ($days <= 90) $filterVal = 'warning';
         else $filterVal = 'inactive';
 
-        // Days color class
         $daysClass = match(true) {
             $days === null => 'days-bad',
             $days <= 30    => 'days-ok',
             $days <= 90    => 'days-warn',
             default        => 'days-bad',
         };
+
+        $email        = $s['email'] ?? '';
+        $moodleMsgUrl = MOODLE_URL ? MOODLE_URL . '/message/index.php?id=' . $userId : '';
       ?>
         <tr data-filter="<?= $filterVal ?>">
           <td class="text-muted"><?= $i + 1 ?></td>
           <td><?= h($s['firstname']) ?></td>
           <td><?= h($s['lastname']) ?></td>
+          <td style="font-size:12px;">
+            <?php if ($email): ?>
+              <a href="mailto:<?= h($email) ?>" style="color:var(--primary);"><?= h($email) ?></a>
+            <?php else: ?>
+              <span class="text-muted">—</span>
+            <?php endif; ?>
+          </td>
           <td>
             <span class="days-value <?= $daysClass ?>">
               <?= $days !== null ? $days . ' ימים' : 'מעולם לא נכנס/ה' ?>
@@ -164,10 +181,24 @@ include __DIR__ . '/views/layout_header.php';
               <?= h($status['label']) ?>
             </span>
           </td>
+          <td class="no-export">
+            <div class="d-flex gap-1 justify-content-center">
+              <?php if ($email): ?>
+                <a href="mailto:<?= h($email) ?>" class="btn-sm-ghost" title="שלח אימייל">
+                  <i class="fa-solid fa-envelope"></i>
+                </a>
+              <?php endif; ?>
+              <?php if ($moodleMsgUrl): ?>
+                <a href="<?= h($moodleMsgUrl) ?>" target="_blank" class="btn-sm-ghost" title="הודעה במודל">
+                  <i class="fa-solid fa-comment-dots"></i>
+                </a>
+              <?php endif; ?>
+            </div>
+          </td>
         </tr>
       <?php endforeach; ?>
       <?php if (empty($students)): ?>
-        <tr><td colspan="6" class="text-center py-5 text-muted">
+        <tr><td colspan="8" class="text-center py-5 text-muted">
           <i class="fa-solid fa-users-slash fa-2x mb-2 d-block"></i>
           אין תלמידים רשומים לקורס זה
         </td></tr>
@@ -190,27 +221,25 @@ $('.filter-btn').on('click', function () {
   var table = $('#students-table').DataTable();
   table.rows().every(function () {
     var node = $(this.node());
-    if (f === 'all' || node.data('filter') === f) {
-      node.show();
-    } else {
-      node.hide();
-    }
+    if (f === 'all' || node.data('filter') === f) node.show();
+    else node.hide();
   });
   table.draw();
 });
 
 // CSV export
 function exportCsv() {
-  var rows = [['שם פרטי','שם משפחה','ימים מאז כניסה','זמן שימוש (דקות)','סטטוס']];
+  var rows = [['שם פרטי','שם משפחה','אימייל','ימים מאז כניסה','זמן שימוש (דקות)','סטטוס']];
   $('#students-table tbody tr').each(function () {
     var tds = $(this).find('td');
-    if (tds.length < 6) return;
+    if (tds.length < 7) return;
     rows.push([
       tds.eq(1).text().trim(),
       tds.eq(2).text().trim(),
       tds.eq(3).text().trim(),
       tds.eq(4).text().trim(),
       tds.eq(5).text().trim(),
+      tds.eq(6).text().trim(),
     ]);
   });
   var csv = '﻿' + rows.map(r => r.map(c => '"' + c.replace(/"/g,'""') + '"').join(',')).join('\n');
